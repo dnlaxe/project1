@@ -2,16 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PDF Editor with Stylus Only</title>
+  <title>PDF Editor with Pen Support</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
-    html, body {
+    body {
+      font-family: sans-serif;
       margin: 0;
       padding: 0;
-      font-family: sans-serif;
-      overflow-x: hidden;
-      overflow-y: scroll;
-      -webkit-overflow-scrolling: touch;
     }
 
     #toolbar {
@@ -31,9 +28,7 @@
       display: block;
       width: 100%;
       height: auto;
-      border: none;
-      touch-action: none;
-      -ms-touch-action: none;
+      border: 1px solid #ccc;
     }
 
     .page-wrapper {
@@ -52,6 +47,7 @@
       z-index: 10;
       pointer-events: auto;
       cursor: crosshair;
+      touch-action: none; /* Enables pen/touch drawing */
     }
 
     .image-layer {
@@ -62,11 +58,6 @@
     .hover-layer {
       z-index: 9;
       pointer-events: none;
-    }
-
-    #pages-container {
-      max-width: 100vw;
-      overflow-x: hidden;
     }
   </style>
 </head>
@@ -97,7 +88,6 @@
   let currentColor = colorPicker.value;
   let currentThickness = parseInt(thicknessRange.value);
   let sliceMode = false;
-  let lastStylusUsed = false;
   const undoHistory = [];
 
   colorPicker.addEventListener('input', () => currentColor = colorPicker.value);
@@ -110,12 +100,11 @@
   });
 
   enterFullscreenBtn.addEventListener('click', () => {
-    const docElm = document.documentElement;
-    docElm.requestFullscreen?.() || docElm.webkitRequestFullscreen?.() || docElm.msRequestFullscreen?.();
+    document.documentElement.requestFullscreen?.();
   });
 
   exitFullscreenBtn.addEventListener('click', () => {
-    document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.msExitFullscreen?.();
+    document.exitFullscreen?.();
   });
 
   document.addEventListener('fullscreenchange', () => {
@@ -133,12 +122,7 @@
 
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-
-      const screenWidth = document.documentElement.clientWidth;
-      const unscaledViewport = page.getViewport({ scale: 1 });
-      const scale = screenWidth / unscaledViewport.width;
-      const viewport = page.getViewport({ scale });
-
+      const viewport = page.getViewport({ scale: 2 });
       const renderCanvas = document.createElement('canvas');
       renderCanvas.width = viewport.width;
       renderCanvas.height = viewport.height;
@@ -148,9 +132,10 @@
   });
 
   function getCanvasCoordinates(e, canvas) {
-    const scaleX = canvas.width / canvas.clientWidth;
-    const scaleY = canvas.height / canvas.clientHeight;
-    return { x: e.offsetX * scaleX, y: e.offsetY * scaleY };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   }
 
   function copyCanvasWithGap(src, gapTop, gapHeight) {
@@ -168,6 +153,23 @@
     return newCanvas;
   }
 
+  function drawSmoothPath(ctx, points, color, thickness) {
+    if (points.length < 2) return;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = thickness;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length - 1; i++) {
+      const midX = (points[i].x + points[i + 1].x) / 2;
+      const midY = (points[i].y + points[i + 1].y) / 2;
+      ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
+    }
+    ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+    ctx.stroke();
+  }
+
   function setupPage(renderCanvas) {
     const wrapper = document.createElement('div');
     wrapper.className = 'page-wrapper';
@@ -178,16 +180,17 @@
     imageCtx.drawImage(renderCanvas, 0, 0);
 
     const drawCanvas = document.createElement('canvas');
-    const drawCtx = drawCanvas.getContext('2d');
     drawCanvas.className = 'draw-layer';
     drawCanvas.width = renderCanvas.width;
     drawCanvas.height = renderCanvas.height;
 
+    const drawCtx = drawCanvas.getContext('2d');
+
     const hoverCanvas = document.createElement('canvas');
-    const hoverCtx = hoverCanvas.getContext('2d');
     hoverCanvas.className = 'hover-layer';
     hoverCanvas.width = renderCanvas.width;
     hoverCanvas.height = renderCanvas.height;
+    const hoverCtx = hoverCanvas.getContext('2d');
 
     const canvasRefs = {
       image: { canvas: imageCanvas, ctx: imageCtx },
@@ -209,14 +212,7 @@
       const ctx = canvasRefs.draw.ctx;
       ctx.clearRect(0, 0, canvasRefs.draw.canvas.width, canvasRefs.draw.canvas.height);
       for (const stroke of annotationHistory) {
-        ctx.beginPath();
-        ctx.strokeStyle = stroke.color;
-        ctx.lineWidth = stroke.thickness;
-        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-        for (let pt of stroke.points.slice(1)) {
-          ctx.lineTo(pt.x, pt.y);
-        }
-        ctx.stroke();
+        drawSmoothPath(ctx, stroke.points, stroke.color, stroke.thickness);
       }
     }
 
@@ -240,11 +236,7 @@
     function bindEvents() {
       const drawCanvas = canvasRefs.draw.canvas;
 
-      drawCanvas.onpointerdown = (e) => {
-        if (e.pointerType !== 'pen') return;
-        e.preventDefault();
-        lastStylusUsed = true;
-
+      drawCanvas.addEventListener('pointerdown', (e) => {
         const { x, y } = getCanvasCoordinates(e, drawCanvas);
         if (sliceMode) {
           if (firstClickY === null) {
@@ -272,6 +264,7 @@
           replaceCanvasWithGap('image', gapTop, gapHeight);
           replaceCanvasWithGap('draw', gapTop, gapHeight);
           replaceCanvasWithGap('hover', gapTop, gapHeight);
+
           wrapper.style.height = `${canvasRefs.image.canvas.height}px`;
 
           bindEvents();
@@ -285,15 +278,10 @@
 
         drawing = true;
         path = [{ x, y }];
-        canvasRefs.draw.ctx.strokeStyle = currentColor;
-        canvasRefs.draw.ctx.lineWidth = currentThickness;
-        canvasRefs.draw.ctx.beginPath();
-        canvasRefs.draw.ctx.moveTo(x, y);
-      };
-
-      drawCanvas.onpointermove = (e) => {
-        if (e.pointerType !== 'pen') return;
         e.preventDefault();
+      });
+
+      drawCanvas.addEventListener('pointermove', (e) => {
         const { x, y } = getCanvasCoordinates(e, drawCanvas);
         canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
 
@@ -309,40 +297,38 @@
 
         if (!drawing) return;
 
+        const pressure = e.pressure || 0.5;
+        const adjustedThickness = currentThickness * pressure;
+
         path.push({ x, y });
-        canvasRefs.draw.ctx.lineTo(x, y);
-        canvasRefs.draw.ctx.stroke();
-      };
-
-      drawCanvas.onpointerup = (e) => {
-        if (e.pointerType !== 'pen') return;
+        drawSmoothPath(canvasRefs.hover.ctx, path, currentColor, adjustedThickness);
         e.preventDefault();
+      });
 
+      drawCanvas.addEventListener('pointerup', () => {
         if (drawing && path.length > 1) {
-          const stroke = {
+          canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
+          drawSmoothPath(canvasRefs.draw.ctx, path, currentColor, currentThickness);
+
+          annotationHistory.push({
             points: path,
             color: currentColor,
             thickness: currentThickness
-          };
-          annotationHistory.push(stroke);
+          });
           undoHistory.push({ type: 'annotation', pageHistory: annotationHistory });
         }
         drawing = false;
-      };
+      });
 
-      drawCanvas.onpointerleave = (e) => {
-        if (e.pointerType !== 'pen') return;
-        e.preventDefault();
+      drawCanvas.addEventListener('pointerleave', () => {
         drawing = false;
         canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
-      };
+      });
     }
 
     bindEvents();
 
     undoBtn.addEventListener('click', () => {
-      if (!lastStylusUsed) return alert("Undo is only available with stylus input.");
-
       const last = undoHistory.pop();
       if (!last) return alert("Nothing to undo.");
 
@@ -373,13 +359,6 @@
       }
     });
   }
-
-  // Block accidental touch inputs on draw canvas
-  document.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.draw-layer')) {
-      e.preventDefault();
-    }
-  }, { passive: false });
 </script>
 </body>
 </html>
