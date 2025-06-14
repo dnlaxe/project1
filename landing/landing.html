@@ -20,19 +20,15 @@
       height: 100%;
       font-family: "Quicksand", sans-serif;
       scroll-behavior: smooth;
-      overflow-y: auto;
-    }
-
-    body {
-      scroll-snap-type: y mandatory;
-      color: #2e2e2e;
+      overflow-x: hidden;
       background-color: #f2f2f2;
+      color: #2e2e2e;
     }
 
     section {
-      height: 100vh;
+      min-height: 100dvh;
       scroll-snap-align: start;
-      padding: 7rem 2rem 4rem;
+      padding: 6rem 1.5rem 3rem;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -55,23 +51,19 @@
       align-items: center;
       padding: 0 1rem;
       z-index: 1000;
-      width: auto;
-      margin-right: 1rem;
     }
 
-.nav-left {
-  font-size: 2.5rem;
-  letter-spacing: -0.1rem;
-  position: relative;
-  font-weight: 900;
-}
-
-
+    .nav-left {
+      font-size: 2rem;
+      letter-spacing: -0.05rem;
+      font-weight: 900;
+    }
 
     .nav-right {
       display: flex;
-      gap: 1.5rem;
+      gap: 1rem;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     .nav-link {
@@ -83,7 +75,7 @@
     .nav-button {
       background-color: #2e2e2e;
       color: #fff;
-      padding: 0.5rem 1.2rem;
+      padding: 0.5rem 1rem;
       font-size: 0.9rem;
       border: none;
       border-radius: 6px;
@@ -92,34 +84,35 @@
 
     h2 {
       font-weight: 700;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
       max-width: 900px;
-        font-family: "Capriola", sans-serif;
+      font-family: "Capriola", sans-serif;
+      font-size: 2rem;
     }
 
     p {
       font-weight: 400;
-      font-size: 1.3rem;
-      line-height: 1.8;
+      font-size: 1.1rem;
+      line-height: 1.7;
       max-width: 850px;
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
     }
 
     .cta-button {
       background-color: #b5f299;
       color: #0d0d0d;
       border: 2px solid #0d0d0d;
-      padding: 1rem 2.5rem;
-      font-size: 1.2rem;
+      padding: 0.8rem 1.8rem;
+      font-size: 1rem;
       cursor: pointer;
       border-radius: 8px;
-      box-shadow: 10px 10px 0 #0d0d0d;
-            font-family: "Quicksand", sans-serif;
+      box-shadow: 6px 6px 0 #0d0d0d;
+      font-family: "Quicksand", sans-serif;
     }
 
     .checker-photo {
-      width: 200px;
-      height: 200px;
+      width: 120px;
+      height: 120px;
       border-radius: 50%;
       background-size: cover;
       background-position: center;
@@ -128,8 +121,8 @@
 
     .checklist {
       text-align: left;
-      font-size: 1.3rem;
-      line-height: 2;
+      font-size: 1.1rem;
+      line-height: 1.8;
       max-width: 850px;
       list-style: none;
       font-weight: 300;
@@ -147,7 +140,7 @@
       display: flex; 
       flex-wrap: wrap; 
       justify-content: center; 
-      gap: 4rem; 
+      gap: 2rem; 
       margin-top: 1rem;
     }
 
@@ -168,58 +161,31 @@
 
     li {
       margin-bottom: 1rem;
-            text-align: center;
-            font-weight: 900;
+      text-align: center;
+      font-weight: 900;
     }
 
     @media (min-width: 1024px) {
       h2 {
-        font-size: 5rem;
+        font-size: 4.5rem;
       }
 
       p, .checklist {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
       }
 
       .cta-button {
         font-size: 1.3rem;
         padding: 1.2rem 3rem;
       }
-    }
-
-    @media (max-width: 768px) {
-      h2 {
-        font-size: 3rem;
-        padding: 0 1rem;
-      }
-
-      p {
-        font-size: 1.5rem;
-        padding: 0 1rem;
-      }
-
-      .cta-button {
-        font-size: 1.4rem;
-        width: 80%;
-      }
-
-      .nav-right {
-        gap: 1rem;
-      }
-
 
       .checker-photo {
-        width: 140px;
-        height: 140px;
-      }
-
-      .checklist {
-        font-size: 1.2rem;
-        padding: 0 1rem;
+        width: 200px;
+        height: 200px;
       }
 
       .checkers {
-        gap: 1rem;
+        gap: 3rem;
       }
     }
   </style>
@@ -237,8 +203,7 @@
 
   <section class="snap-section">
     <h2>Learn English by Fixing Your Mistakes</h2>
-    <p>Tired of robotic grammar checkers?
-Checkmate connects you with real people who help you improve step-by-step through personalized video corrections.</p>
+    <p>Tired of robotic grammar checkers? Checkmate connects you with real people who help you improve step-by-step through personalized video corrections.</p>
     <button class="cta-button">Try Your First Correction →</button>
   </section>
 
@@ -250,13 +215,13 @@ Checkmate connects you with real people who help you improve step-by-step throug
   <section class="snap-section">
     <h2>Step 2: Choose Your Checkmate</h2>
     <p>Browse expert checkers. See their specialties, styles, and prices. Choose someone you connect with.</p>
-      <div class="checkers">
-        <div class="checker-photo" style="background-image: url('checker1.avif');"></div>
-        <div class="checker-photo" style="background-image: url('checker2.avif');"></div>
-        <div class="checker-photo" style="background-image: url('checker3.avif');"></div>
-        <div class="checker-photo" style="background-image: url('checker4.avif');"></div>
-        <div class="checker-photo" style="background-image: url('checker5.avif')"></div>
-      </div>
+    <div class="checkers">
+      <div class="checker-photo" style="background-image: url('checker1.avif');"></div>
+      <div class="checker-photo" style="background-image: url('checker2.avif');"></div>
+      <div class="checker-photo" style="background-image: url('checker3.avif');"></div>
+      <div class="checker-photo" style="background-image: url('checker4.avif');"></div>
+      <div class="checker-photo" style="background-image: url('checker5.avif')"></div>
+    </div>
   </section>
 
   <section class="snap-section">
