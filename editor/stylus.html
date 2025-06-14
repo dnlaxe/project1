@@ -233,96 +233,99 @@
       canvasRefs[key].ctx = newCanvas.getContext('2d');
     }
 
-    function bindEvents() {
-      const drawCanvas = canvasRefs.draw.canvas;
+function bindEvents() {
+  const drawCanvas = canvasRefs.draw.canvas;
 
-      drawCanvas.onmousedown = (e) => {
-        const { x, y } = getCanvasCoordinates(e, drawCanvas);
-        if (sliceMode) {
-          if (firstClickY === null) {
-            firstClickY = y;
-            sliceBtn.textContent = 'Click to Set Bottom of Gap';
-            return;
-          }
-          if (y <= firstClickY) {
-            alert("Second click must be below the first.");
-            firstClickY = null;
-            sliceBtn.textContent = 'Click to Set Top of Gap';
-            return;
-          }
+  drawCanvas.style.touchAction = 'none'; // Prevent default touch scrolling
+  drawCanvas.onpointerdown = (e) => {
+    drawCanvas.setPointerCapture(e.pointerId);
+    const { x, y } = getCanvasCoordinates(e, drawCanvas);
+    if (sliceMode) {
+      if (firstClickY === null) {
+        firstClickY = y;
+        sliceBtn.textContent = 'Click to Set Bottom of Gap';
+        return;
+      }
+      if (y <= firstClickY) {
+        alert("Second click must be below the first.");
+        firstClickY = null;
+        sliceBtn.textContent = 'Click to Set Top of Gap';
+        return;
+      }
 
-          const gapTop = firstClickY;
-          const gapHeight = y - firstClickY;
+      const gapTop = firstClickY;
+      const gapHeight = y - firstClickY;
 
-          undoHistory.push({
-            type: 'insert',
-            canvasRefs: { ...canvasRefs },
-            wrapper,
-            state: captureInsertState()
-          });
+      undoHistory.push({
+        type: 'insert',
+        canvasRefs: { ...canvasRefs },
+        wrapper,
+        state: captureInsertState()
+      });
 
-          replaceCanvasWithGap('image', gapTop, gapHeight);
-          replaceCanvasWithGap('draw', gapTop, gapHeight);
-          replaceCanvasWithGap('hover', gapTop, gapHeight);
+      replaceCanvasWithGap('image', gapTop, gapHeight);
+      replaceCanvasWithGap('draw', gapTop, gapHeight);
+      replaceCanvasWithGap('hover', gapTop, gapHeight);
 
-          wrapper.style.height = `${canvasRefs.image.canvas.height}px`;
+      wrapper.style.height = `${canvasRefs.image.canvas.height}px`;
 
-          bindEvents();
-          canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
-          firstClickY = null;
-          sliceMode = false;
-          sliceBtn.textContent = 'Insert Space Mode';
-          sliceBtn.style.backgroundColor = '';
-          return;
-        }
-
-        drawing = true;
-        path = [{ x, y }];
-      };
-
-      drawCanvas.onmousemove = (e) => {
-        const { x, y } = getCanvasCoordinates(e, drawCanvas);
-        canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
-
-        if (sliceMode) {
-          canvasRefs.hover.ctx.strokeStyle = 'red';
-          canvasRefs.hover.ctx.lineWidth = 1;
-          canvasRefs.hover.ctx.beginPath();
-          canvasRefs.hover.ctx.moveTo(0, y);
-          canvasRefs.hover.ctx.lineTo(canvasRefs.hover.canvas.width, y);
-          canvasRefs.hover.ctx.stroke();
-          return;
-        }
-
-        if (!drawing) return;
-
-        path.push({ x, y });
-
-        // Progressive real-time drawing
-        const tempPath = path.slice(-3);
-        if (tempPath.length >= 2) {
-          drawSmoothPath(canvasRefs.draw.ctx, tempPath, currentColor, currentThickness);
-        }
-      };
-
-      drawCanvas.onmouseup = () => {
-        if (drawing && path.length > 1) {
-          canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
-          annotationHistory.push({
-            points: [...path],
-            color: currentColor,
-            thickness: currentThickness
-          });
-          undoHistory.push({ type: 'annotation', pageHistory: annotationHistory });
-        }
-        drawing = false;
-      };
-
-      drawCanvas.onmouseleave = () => {
-        drawing = false;
-        canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
-      };
+      bindEvents();
+      canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
+      firstClickY = null;
+      sliceMode = false;
+      sliceBtn.textContent = 'Insert Space Mode';
+      sliceBtn.style.backgroundColor = '';
+      return;
     }
+
+    drawing = true;
+    path = [{ x, y }];
+  };
+
+  drawCanvas.onpointermove = (e) => {
+    const { x, y } = getCanvasCoordinates(e, drawCanvas);
+    canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
+
+    if (sliceMode) {
+      canvasRefs.hover.ctx.strokeStyle = 'red';
+      canvasRefs.hover.ctx.lineWidth = 1;
+      canvasRefs.hover.ctx.beginPath();
+      canvasRefs.hover.ctx.moveTo(0, y);
+      canvasRefs.hover.ctx.lineTo(canvasRefs.hover.canvas.width, y);
+      canvasRefs.hover.ctx.stroke();
+      return;
+    }
+
+    if (!drawing) return;
+
+    path.push({ x, y });
+
+    const tempPath = path.slice(-3);
+    if (tempPath.length >= 2) {
+      drawSmoothPath(canvasRefs.draw.ctx, tempPath, currentColor, currentThickness);
+    }
+  };
+
+  drawCanvas.onpointerup = (e) => {
+    drawCanvas.releasePointerCapture(e.pointerId);
+    if (drawing && path.length > 1) {
+      canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
+      annotationHistory.push({
+        points: [...path],
+        color: currentColor,
+        thickness: currentThickness
+      });
+      undoHistory.push({ type: 'annotation', pageHistory: annotationHistory });
+    }
+    drawing = false;
+  };
+
+  drawCanvas.onpointerleave = () => {
+    drawing = false;
+    canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
+  };
+}
+
 
     bindEvents();
 
