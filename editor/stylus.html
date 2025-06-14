@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PDF Editor with Pen Support</title>
+  <title>PDF Editor with Undo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
@@ -11,6 +11,7 @@
       margin: 0;
       padding: 0;
     }
+
     #toolbar {
       position: sticky;
       top: 0;
@@ -23,32 +24,37 @@
       z-index: 1000;
       border-bottom: 1px solid #ccc;
     }
+
     canvas {
       display: block;
       width: 100%;
       height: auto;
       border: 1px solid #ccc;
-      touch-action: none;
     }
+
     .page-wrapper {
       position: relative;
       width: 100%;
       margin-bottom: 40px;
     }
+
     .draw-layer, .image-layer, .hover-layer {
       position: absolute;
       top: 0;
       left: 0;
     }
+
     .draw-layer {
       z-index: 10;
       pointer-events: auto;
       cursor: crosshair;
     }
+
     .image-layer {
       z-index: 1;
       pointer-events: none;
     }
+
     .hover-layer {
       z-index: 9;
       pointer-events: none;
@@ -63,6 +69,8 @@
   <label>Thickness: <input type="range" id="thickness-range" min="1" max="10" value="2" /></label>
   <button id="slice-btn">Insert Space Mode</button>
   <button id="undo-btn">Undo</button>
+  <button id="enter-fullscreen-btn">Enter Fullscreen</button>
+  <button id="exit-fullscreen-btn" style="display: none;">Exit Fullscreen</button>
 </div>
 
 <div id="pages-container"></div>
@@ -74,6 +82,8 @@
   const thicknessRange = document.getElementById('thickness-range');
   const sliceBtn = document.getElementById('slice-btn');
   const undoBtn = document.getElementById('undo-btn');
+  const enterFullscreenBtn = document.getElementById('enter-fullscreen-btn');
+  const exitFullscreenBtn = document.getElementById('exit-fullscreen-btn');
 
   let currentColor = colorPicker.value;
   let currentThickness = parseInt(thicknessRange.value);
@@ -82,10 +92,26 @@
 
   colorPicker.addEventListener('input', () => currentColor = colorPicker.value);
   thicknessRange.addEventListener('input', () => currentThickness = parseInt(thicknessRange.value));
+
   sliceBtn.addEventListener('click', () => {
     sliceMode = !sliceMode;
     sliceBtn.textContent = sliceMode ? 'Click to Set Top of Gap' : 'Insert Space Mode';
     sliceBtn.style.backgroundColor = sliceMode ? '#ddd' : '';
+  });
+
+  enterFullscreenBtn.addEventListener('click', () => {
+    const docElm = document.documentElement;
+    docElm.requestFullscreen?.() || docElm.webkitRequestFullscreen?.() || docElm.msRequestFullscreen?.();
+  });
+
+  exitFullscreenBtn.addEventListener('click', () => {
+    document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.msExitFullscreen?.();
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    const isFS = !!document.fullscreenElement;
+    enterFullscreenBtn.style.display = isFS ? 'none' : 'inline-block';
+    exitFullscreenBtn.style.display = isFS ? 'inline-block' : 'none';
   });
 
   fileInput.addEventListener('change', async (e) => {
@@ -118,8 +144,10 @@
     newCanvas.className = src.className;
     newCanvas.width = src.width;
     newCanvas.height = src.height + gapHeight;
+
     ctx.drawImage(src, 0, 0, src.width, gapTop, 0, 0, src.width, gapTop);
-    ctx.drawImage(src, 0, gapTop, src.width, src.height - gapTop, 0, gapTop + gapHeight, src.width, src.height - gapTop);
+    ctx.drawImage(src, 0, gapTop, src.width, src.height - gapTop,
+                  0, gapTop + gapHeight, src.width, src.height - gapTop);
     ctx.fillStyle = 'white';
     ctx.fillRect(0, gapTop, src.width, gapHeight);
     return newCanvas;
@@ -132,6 +160,7 @@
     ctx.lineWidth = thickness;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
+
     ctx.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length - 1; i++) {
       const midX = (points[i].x + points[i + 1].x) / 2;
@@ -206,12 +235,11 @@
 
     function bindEvents() {
       const drawCanvas = canvasRefs.draw.canvas;
-      const hoverCanvas = canvasRefs.hover.canvas;
-      drawCanvas.style.touchAction = 'none';
 
-      drawCanvas.addEventListener('pointerdown', (e) => {
-        drawCanvas.setPointerCapture(e.pointerId);
+      drawCanvas.onpointerdown = (e) => {
+        if (e.pointerType !== 'pen') return;
         const { x, y } = getCanvasCoordinates(e, drawCanvas);
+
         if (sliceMode) {
           if (firstClickY === null) {
             firstClickY = y;
@@ -224,20 +252,25 @@
             sliceBtn.textContent = 'Click to Set Top of Gap';
             return;
           }
+
           const gapTop = firstClickY;
           const gapHeight = y - firstClickY;
+
           undoHistory.push({
             type: 'insert',
             canvasRefs: { ...canvasRefs },
             wrapper,
             state: captureInsertState()
           });
+
           replaceCanvasWithGap('image', gapTop, gapHeight);
           replaceCanvasWithGap('draw', gapTop, gapHeight);
           replaceCanvasWithGap('hover', gapTop, gapHeight);
+
           wrapper.style.height = `${canvasRefs.image.canvas.height}px`;
+
           bindEvents();
-          canvasRefs.hover.ctx.clearRect(0, 0, hoverCanvas.width, hoverCanvas.height);
+          canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
           firstClickY = null;
           sliceMode = false;
           sliceBtn.textContent = 'Insert Space Mode';
@@ -247,18 +280,19 @@
 
         drawing = true;
         path = [{ x, y }];
-      });
+      };
 
-      drawCanvas.addEventListener('pointermove', (e) => {
+      drawCanvas.onpointermove = (e) => {
+        if (e.pointerType !== 'pen') return;
         const { x, y } = getCanvasCoordinates(e, drawCanvas);
-        canvasRefs.hover.ctx.clearRect(0, 0, hoverCanvas.width, hoverCanvas.height);
+        canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
 
         if (sliceMode) {
           canvasRefs.hover.ctx.strokeStyle = 'red';
           canvasRefs.hover.ctx.lineWidth = 1;
           canvasRefs.hover.ctx.beginPath();
           canvasRefs.hover.ctx.moveTo(0, y);
-          canvasRefs.hover.ctx.lineTo(hoverCanvas.width, y);
+          canvasRefs.hover.ctx.lineTo(canvasRefs.hover.canvas.width, y);
           canvasRefs.hover.ctx.stroke();
           return;
         }
@@ -270,12 +304,12 @@
         if (tempPath.length >= 2) {
           drawSmoothPath(canvasRefs.draw.ctx, tempPath, currentColor, currentThickness);
         }
-      });
+      };
 
-      drawCanvas.addEventListener('pointerup', (e) => {
-        drawCanvas.releasePointerCapture(e.pointerId);
+      drawCanvas.onpointerup = (e) => {
+        if (e.pointerType !== 'pen') return;
         if (drawing && path.length > 1) {
-          canvasRefs.hover.ctx.clearRect(0, 0, hoverCanvas.width, hoverCanvas.height);
+          canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
           annotationHistory.push({
             points: [...path],
             color: currentColor,
@@ -284,12 +318,13 @@
           undoHistory.push({ type: 'annotation', pageHistory: annotationHistory });
         }
         drawing = false;
-      });
+      };
 
-      drawCanvas.addEventListener('pointerleave', () => {
+      drawCanvas.onpointerleave = (e) => {
+        if (e.pointerType !== 'pen') return;
         drawing = false;
-        canvasRefs.hover.ctx.clearRect(0, 0, hoverCanvas.width, hoverCanvas.height);
-      });
+        canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
+      };
     }
 
     bindEvents();
@@ -297,11 +332,13 @@
     undoBtn.addEventListener('click', () => {
       const last = undoHistory.pop();
       if (!last) return alert("Nothing to undo.");
+
       if (last.type === 'annotation') {
         last.pageHistory.pop();
         redrawAnnotations();
       } else if (last.type === 'insert') {
         const { canvasRefs: cr, state, wrapper: wrap } = last;
+
         const restore = (canvas, dataURL, height) => {
           const img = new Image();
           img.onload = () => {
@@ -313,10 +350,12 @@
           };
           img.src = dataURL;
         };
+
         restore(cr.image.canvas, state.image, state.height);
         restore(cr.draw.canvas, state.draw, state.height);
         restore(cr.hover.canvas, state.hover, state.height);
         wrap.style.height = `${state.height}px`;
+
         bindEvents();
       }
     });
