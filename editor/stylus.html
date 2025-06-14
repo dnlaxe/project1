@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PDF Editor with Pen Support</title>
+  <title>PDF Editor (Pen Only Drawing)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     body {
@@ -47,7 +47,7 @@
       z-index: 10;
       pointer-events: auto;
       cursor: crosshair;
-      touch-action: none; /* Enables pen/touch drawing */
+      touch-action: none; /* disable touch zoom/pan */
     }
 
     .image-layer {
@@ -183,7 +183,6 @@
     drawCanvas.className = 'draw-layer';
     drawCanvas.width = renderCanvas.width;
     drawCanvas.height = renderCanvas.height;
-
     const drawCtx = drawCanvas.getContext('2d');
 
     const hoverCanvas = document.createElement('canvas');
@@ -236,8 +235,12 @@
     function bindEvents() {
       const drawCanvas = canvasRefs.draw.canvas;
 
+      drawCanvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+
       drawCanvas.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'pen') return;
         const { x, y } = getCanvasCoordinates(e, drawCanvas);
+
         if (sliceMode) {
           if (firstClickY === null) {
             firstClickY = y;
@@ -282,20 +285,10 @@
       });
 
       drawCanvas.addEventListener('pointermove', (e) => {
+        if (e.pointerType !== 'pen' || !drawing) return;
+
         const { x, y } = getCanvasCoordinates(e, drawCanvas);
         canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
-
-        if (sliceMode) {
-          canvasRefs.hover.ctx.strokeStyle = 'red';
-          canvasRefs.hover.ctx.lineWidth = 1;
-          canvasRefs.hover.ctx.beginPath();
-          canvasRefs.hover.ctx.moveTo(0, y);
-          canvasRefs.hover.ctx.lineTo(canvasRefs.hover.canvas.width, y);
-          canvasRefs.hover.ctx.stroke();
-          return;
-        }
-
-        if (!drawing) return;
 
         const pressure = e.pressure || 0.5;
         const adjustedThickness = currentThickness * pressure;
@@ -305,7 +298,9 @@
         e.preventDefault();
       });
 
-      drawCanvas.addEventListener('pointerup', () => {
+      drawCanvas.addEventListener('pointerup', (e) => {
+        if (e.pointerType !== 'pen') return;
+
         if (drawing && path.length > 1) {
           canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
           drawSmoothPath(canvasRefs.draw.ctx, path, currentColor, currentThickness);
@@ -320,7 +315,8 @@
         drawing = false;
       });
 
-      drawCanvas.addEventListener('pointerleave', () => {
+      drawCanvas.addEventListener('pointerleave', (e) => {
+        if (e.pointerType !== 'pen') return;
         drawing = false;
         canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
       });
