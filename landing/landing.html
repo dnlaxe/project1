@@ -7,8 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Moirai+One&family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -25,44 +23,34 @@
       color: #2e2e2e;
     }
 
-    section {
-      min-height: 100dvh;
-      scroll-snap-align: start;
-      padding: 6rem 1.5rem 3rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      opacity: 0;
-      transform: translateY(40px);
-      text-align: center;
+    header.site-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background-color: #f2f2f2;
+      border-bottom: 1px solid #ddd;
+      padding: 0.75rem 1.25rem;
     }
 
-    nav {
-      position: fixed;
-      top: 1rem;
-      left: 1rem;
-      right: 1rem;
-      height: 60px;
-      background: transparent;
-      border-radius: 12px;
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 1rem;
-      z-index: 1000;
+      flex-wrap: wrap;
     }
 
-    .nav-left {
+    .logo {
       font-size: 2rem;
-      letter-spacing: -0.05rem;
       font-weight: 900;
+      letter-spacing: -0.05rem;
     }
 
-    .nav-right {
+    .nav-links {
       display: flex;
-      gap: 1rem;
       align-items: center;
+      gap: 1rem;
       flex-wrap: wrap;
     }
 
@@ -80,6 +68,16 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+    }
+
+    section {
+      min-height: 100dvh;
+      padding: 6rem 1.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
     }
 
     h2 {
@@ -137,10 +135,10 @@
     }
 
     .checkers {
-      display: flex; 
-      flex-wrap: wrap; 
-      justify-content: center; 
-      gap: 2rem; 
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
       margin-top: 1rem;
     }
 
@@ -188,31 +186,61 @@
         gap: 3rem;
       }
     }
+
+    @media (max-width: 600px) {
+      .container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .nav-links {
+        justify-content: flex-start;
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .cta-button {
+        font-size: 1rem;
+        width: 100%;
+      }
+
+      h2 {
+        font-size: 2rem;
+      }
+
+      p {
+        font-size: 1.1rem;
+      }
+    }
   </style>
 </head>
 <body>
 
-  <nav>
-    <div class="nav-left">Checkmate</div>
-    <div class="nav-right">
-      <a href="#" class="nav-link">How It Works</a>
-      <a href="#" class="nav-link">Blog</a>
-      <button class="nav-button">LOG IN</button>
+  <header class="site-header">
+    <div class="container">
+      <div class="logo">Checkmate</div>
+      <nav class="nav-links">
+        <a href="#" class="nav-link">How It Works</a>
+        <a href="#" class="nav-link">Blog</a>
+        <button class="nav-button">LOG IN</button>
+      </nav>
     </div>
-  </nav>
+  </header>
 
-  <section class="snap-section">
+  <section>
     <h2>Learn English by Fixing Your Mistakes</h2>
     <p>Tired of robotic grammar checkers? Checkmate connects you with real people who help you improve step-by-step through personalized video corrections.</p>
     <button class="cta-button">Try Your First Correction →</button>
   </section>
 
-  <section class="snap-section">
+  <section>
     <h2>Step 1: Upload Your Writing</h2>
     <p>Essay, homework, speech draft — just drop it in. The more real, the better. Checkmates are here to help you with what matters most to you.</p>
   </section>
 
-  <section class="snap-section">
+  <section>
     <h2>Step 2: Choose Your Checkmate</h2>
     <p>Browse expert checkers. See their specialties, styles, and prices. Choose someone you connect with.</p>
     <div class="checkers">
@@ -224,17 +252,17 @@
     </div>
   </section>
 
-  <section class="snap-section">
+  <section>
     <h2>Step 3: Get a Correction Video</h2>
     <p>Your Checkmate records a short video: they mark your writing and explain what to fix — and why. Watch, listen, absorb.</p>
   </section>
 
-  <section class="snap-section">
+  <section>
     <h2>Step 4: Learn. Rewatch. Improve.</h2>
     <p>This isn't just feedback — it's a personal mini-lesson. Rewatch anytime. Grow your skill with every submission.</p>
   </section>
 
-  <section class="snap-section">
+  <section>
     <h2>Why It Works: Backed by Research</h2>
     <ul class="checklist">
       <li>Learners retain more when corrections are explained aloud — not just marked <span id="citation">(Lyster & Ranta, 1997).</span></li>
@@ -246,22 +274,6 @@
   <footer>
     © 2025 Checkmate. Learn better. Not just faster.
   </footer>
-
-  <script>
-    gsap.registerPlugin(ScrollTrigger);
-    gsap.utils.toArray('.snap-section').forEach(section => {
-      gsap.to(section, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        ease: 'power2.out',
-        scrollTrigger: {
-          trigger: section,
-          start: 'top center',
-        }
-      });
-    });
-  </script>
 
 </body>
 </html>
