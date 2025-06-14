@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkmate – Improve Your English Writing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Moirai+One&family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: "Quicksand", sans-serif;
+      scroll-behavior: smooth;
+      overflow-y: auto;
+    }
+
+    body {
+      scroll-snap-type: y mandatory;
+      color: #2e2e2e;
+      background-color: #f2f2f2;
+    }
+
+    section {
+      height: 100vh;
+      scroll-snap-align: start;
+      padding: 7rem 2rem 4rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transform: translateY(40px);
+      text-align: center;
+    }
+
+    nav {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      right: 1rem;
+      height: 60px;
+      background: transparent;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 1rem;
+      z-index: 1000;
+      width: auto;
+      margin-right: 1rem;
+    }
+
+.nav-left {
+  font-size: 2.5rem;
+  letter-spacing: -0.1rem;
+  position: relative;
+  font-weight: 900;
+}
+
+
+
+    .nav-right {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 1rem;
+      text-decoration: none;
+      color: #2e2e2e;
+    }
+
+    .nav-button {
+      background-color: #2e2e2e;
+      color: #fff;
+      padding: 0.5rem 1.2rem;
+      font-size: 0.9rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    h2 {
+      font-weight: 700;
+      margin-bottom: 2rem;
+      max-width: 900px;
+        font-family: "Capriola", sans-serif;
+    }
+
+    p {
+      font-weight: 400;
+      font-size: 1.3rem;
+      line-height: 1.8;
+      max-width: 850px;
+      margin-bottom: 3rem;
+    }
+
+    .cta-button {
+      background-color: #b5f299;
+      color: #0d0d0d;
+      border: 2px solid #0d0d0d;
+      padding: 1rem 2.5rem;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border-radius: 8px;
+      box-shadow: 10px 10px 0 #0d0d0d;
+            font-family: "Quicksand", sans-serif;
+    }
+
+    .checker-photo {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background-size: cover;
+      background-position: center;
+      border: 2px solid #2e2e2e;
+    }
+
+    .checklist {
+      text-align: left;
+      font-size: 1.3rem;
+      line-height: 2;
+      max-width: 850px;
+      list-style: none;
+      font-weight: 300;
+    }
+
+    .checklist li::before {
+      content: "✓";
+      color: #b5f299;
+      font-weight: bold;
+      display: inline-block;
+      width: 1.5em;
+    }
+
+    .checkers {
+      display: flex; 
+      flex-wrap: wrap; 
+      justify-content: center; 
+      gap: 4rem; 
+      margin-top: 1rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 1rem;
+      color: #777;
+    }
+
+    #citation {
+      font-style: italic;
+    }
+
+    ul {
+      margin-top: 2rem;
+    }
+
+    li {
+      margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 900;
+    }
+
+    @media (min-width: 1024px) {
+      h2 {
+        font-size: 5rem;
+      }
+
+      p, .checklist {
+        font-size: 1.5rem;
+      }
+
+      .cta-button {
+        font-size: 1.3rem;
+        padding: 1.2rem 3rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      h2 {
+        font-size: 3rem;
+        padding: 0 1rem;
+      }
+
+      p {
+        font-size: 1.5rem;
+        padding: 0 1rem;
+      }
+
+      .cta-button {
+        font-size: 1.4rem;
+        width: 80%;
+      }
+
+      .nav-right {
+        gap: 1rem;
+      }
+
+
+      .checker-photo {
+        width: 140px;
+        height: 140px;
+      }
+
+      .checklist {
+        font-size: 1.2rem;
+        padding: 0 1rem;
+      }
+
+      .checkers {
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-left">Checkmate</div>
+    <div class="nav-right">
+      <a href="#" class="nav-link">How It Works</a>
+      <a href="#" class="nav-link">Blog</a>
+      <button class="nav-button">LOG IN</button>
+    </div>
+  </nav>
+
+  <section class="snap-section">
+    <h2>Learn English by Fixing Your Mistakes</h2>
+    <p>Tired of robotic grammar checkers?
+Checkmate connects you with real people who help you improve step-by-step through personalized video corrections.</p>
+    <button class="cta-button">Try Your First Correction →</button>
+  </section>
+
+  <section class="snap-section">
+    <h2>Step 1: Upload Your Writing</h2>
+    <p>Essay, homework, speech draft — just drop it in. The more real, the better. Checkmates are here to help you with what matters most to you.</p>
+  </section>
+
+  <section class="snap-section">
+    <h2>Step 2: Choose Your Checkmate</h2>
+    <p>Browse expert checkers. See their specialties, styles, and prices. Choose someone you connect with.</p>
+      <div class="checkers">
+        <div class="checker-photo" style="background-image: url('checker1.avif');"></div>
+        <div class="checker-photo" style="background-image: url('checker2.avif');"></div>
+        <div class="checker-photo" style="background-image: url('checker3.avif');"></div>
+        <div class="checker-photo" style="background-image: url('checker4.avif');"></div>
+        <div class="checker-photo" style="background-image: url('checker5.avif')"></div>
+      </div>
+  </section>
+
+  <section class="snap-section">
+    <h2>Step 3: Get a Correction Video</h2>
+    <p>Your Checkmate records a short video: they mark your writing and explain what to fix — and why. Watch, listen, absorb.</p>
+  </section>
+
+  <section class="snap-section">
+    <h2>Step 4: Learn. Rewatch. Improve.</h2>
+    <p>This isn't just feedback — it's a personal mini-lesson. Rewatch anytime. Grow your skill with every submission.</p>
+  </section>
+
+  <section class="snap-section">
+    <h2>Why It Works: Backed by Research</h2>
+    <ul class="checklist">
+      <li>Learners retain more when corrections are explained aloud — not just marked <span id="citation">(Lyster & Ranta, 1997).</span></li>
+      <li>Watching + listening activates multiple parts of the brain, improving understanding <span id="citation">(Paivio, 1986; Mayer, 2001).</span></li>
+      <li>Seeing a human checker “think aloud” boosts metacognitive skills and deep learning <span id="citation">(Ericsson & Simon, 1993).</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    © 2025 Checkmate. Learn better. Not just faster.
+  </footer>
+
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray('.snap-section').forEach(section => {
+      gsap.to(section, {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: section,
+          start: 'top center',
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PDF Editor with Stylus Only</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #toolbar {
+      position: sticky;
+      top: 0;
+      background: #f0f0f0;
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid #ccc;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+      touch-action: none; /* prevents gestures from interfering with stylus */
+    }
+
+    .page-wrapper {
+      position: relative;
+      width: 100%;
+      margin-bottom: 40px;
+    }
+
+    .draw-layer, .image-layer, .hover-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .draw-layer {
+      z-index: 10;
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+
+    .image-layer {
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .hover-layer {
+      z-index: 9;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <input type="file" id="pdf-upload" accept="application/pdf" />
+  <label>Color: <input type="color" id="color-picker" value="#ff0000" /></label>
+  <label>Thickness: <input type="range" id="thickness-range" min="1" max="10" value="2" /></label>
+  <button id="slice-btn">Insert Space Mode</button>
+  <button id="undo-btn">Undo</button>
+  <button id="enter-fullscreen-btn">Enter Fullscreen</button>
+  <button id="exit-fullscreen-btn" style="display: none;">Exit Fullscreen</button>
+</div>
+
+<div id="pages-container"></div>
+
+<script>
+  const fileInput = document.getElementById('pdf-upload');
+  const pagesContainer = document.getElementById('pages-container');
+  const colorPicker = document.getElementById('color-picker');
+  const thicknessRange = document.getElementById('thickness-range');
+  const sliceBtn = document.getElementById('slice-btn');
+  const undoBtn = document.getElementById('undo-btn');
+  const enterFullscreenBtn = document.getElementById('enter-fullscreen-btn');
+  const exitFullscreenBtn = document.getElementById('exit-fullscreen-btn');
+
+  let currentColor = colorPicker.value;
+  let currentThickness = parseInt(thicknessRange.value);
+  let sliceMode = false;
+  let lastStylusUsed = false;
+  const undoHistory = [];
+
+  colorPicker.addEventListener('input', () => currentColor = colorPicker.value);
+  thicknessRange.addEventListener('input', () => currentThickness = parseInt(thicknessRange.value));
+
+  sliceBtn.addEventListener('click', () => {
+    sliceMode = !sliceMode;
+    sliceBtn.textContent = sliceMode ? 'Click to Set Top of Gap' : 'Insert Space Mode';
+    sliceBtn.style.backgroundColor = sliceMode ? '#ddd' : '';
+  });
+
+  enterFullscreenBtn.addEventListener('click', () => {
+    const docElm = document.documentElement;
+    docElm.requestFullscreen?.() || docElm.webkitRequestFullscreen?.() || docElm.msRequestFullscreen?.();
+  });
+
+  exitFullscreenBtn.addEventListener('click', () => {
+    document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.msExitFullscreen?.();
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    const isFS = !!document.fullscreenElement;
+    enterFullscreenBtn.style.display = isFS ? 'none' : 'inline-block';
+    exitFullscreenBtn.style.display = isFS ? 'inline-block' : 'none';
+  });
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file || file.type !== 'application/pdf') return alert('Select a valid PDF.');
+    pagesContainer.innerHTML = '';
+    const typedArray = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2 });
+      const renderCanvas = document.createElement('canvas');
+      renderCanvas.width = viewport.width;
+      renderCanvas.height = viewport.height;
+      await page.render({ canvasContext: renderCanvas.getContext('2d'), viewport }).promise;
+      setupPage(renderCanvas);
+    }
+  });
+
+  function getCanvasCoordinates(e, canvas) {
+    const scaleX = canvas.width / canvas.clientWidth;
+    const scaleY = canvas.height / canvas.clientHeight;
+    return { x: e.offsetX * scaleX, y: e.offsetY * scaleY };
+  }
+
+  function copyCanvasWithGap(src, gapTop, gapHeight) {
+    const newCanvas = document.createElement('canvas');
+    const ctx = newCanvas.getContext('2d');
+    newCanvas.className = src.className;
+    newCanvas.width = src.width;
+    newCanvas.height = src.height + gapHeight;
+
+    ctx.drawImage(src, 0, 0, src.width, gapTop, 0, 0, src.width, gapTop);
+    ctx.drawImage(src, 0, gapTop, src.width, src.height - gapTop,
+                  0, gapTop + gapHeight, src.width, src.height - gapTop);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, gapTop, src.width, gapHeight);
+    return newCanvas;
+  }
+
+  function setupPage(renderCanvas) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'page-wrapper';
+    wrapper.style.height = `${renderCanvas.height}px`;
+
+    const imageCanvas = renderCanvas.cloneNode();
+    const imageCtx = imageCanvas.getContext('2d');
+    imageCtx.drawImage(renderCanvas, 0, 0);
+
+    const drawCanvas = document.createElement('canvas');
+    const drawCtx = drawCanvas.getContext('2d');
+    drawCanvas.className = 'draw-layer';
+    drawCanvas.width = renderCanvas.width;
+    drawCanvas.height = renderCanvas.height;
+
+    const hoverCanvas = document.createElement('canvas');
+    const hoverCtx = hoverCanvas.getContext('2d');
+    hoverCanvas.className = 'hover-layer';
+    hoverCanvas.width = renderCanvas.width;
+    hoverCanvas.height = renderCanvas.height;
+
+    const canvasRefs = {
+      image: { canvas: imageCanvas, ctx: imageCtx },
+      draw: { canvas: drawCanvas, ctx: drawCtx },
+      hover: { canvas: hoverCanvas, ctx: hoverCtx }
+    };
+
+    wrapper.appendChild(imageCanvas);
+    wrapper.appendChild(hoverCanvas);
+    wrapper.appendChild(drawCanvas);
+    pagesContainer.appendChild(wrapper);
+
+    const annotationHistory = [];
+    let drawing = false;
+    let path = [];
+    let firstClickY = null;
+
+    function redrawAnnotations() {
+      const ctx = canvasRefs.draw.ctx;
+      ctx.clearRect(0, 0, canvasRefs.draw.canvas.width, canvasRefs.draw.canvas.height);
+      for (const stroke of annotationHistory) {
+        ctx.beginPath();
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = stroke.thickness;
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        for (let pt of stroke.points.slice(1)) {
+          ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    function captureInsertState() {
+      return {
+        image: canvasRefs.image.canvas.toDataURL(),
+        draw: canvasRefs.draw.canvas.toDataURL(),
+        hover: canvasRefs.hover.canvas.toDataURL(),
+        height: canvasRefs.image.canvas.height
+      };
+    }
+
+    function replaceCanvasWithGap(key, gapTop, gapHeight) {
+      const oldCanvas = canvasRefs[key].canvas;
+      const newCanvas = copyCanvasWithGap(oldCanvas, gapTop, gapHeight);
+      wrapper.replaceChild(newCanvas, oldCanvas);
+      canvasRefs[key].canvas = newCanvas;
+      canvasRefs[key].ctx = newCanvas.getContext('2d');
+    }
+
+    function bindEvents() {
+      const drawCanvas = canvasRefs.draw.canvas;
+
+      drawCanvas.onpointerdown = (e) => {
+        if (e.pointerType !== 'pen') return;
+        lastStylusUsed = true;
+
+        const { x, y } = getCanvasCoordinates(e, drawCanvas);
+        if (sliceMode) {
+          if (firstClickY === null) {
+            firstClickY = y;
+            sliceBtn.textContent = 'Click to Set Bottom of Gap';
+            return;
+          }
+          if (y <= firstClickY) {
+            alert("Second click must be below the first.");
+            firstClickY = null;
+            sliceBtn.textContent = 'Click to Set Top of Gap';
+            return;
+          }
+
+          const gapTop = firstClickY;
+          const gapHeight = y - firstClickY;
+
+          undoHistory.push({
+            type: 'insert',
+            canvasRefs: { ...canvasRefs },
+            wrapper,
+            state: captureInsertState()
+          });
+
+          replaceCanvasWithGap('image', gapTop, gapHeight);
+          replaceCanvasWithGap('draw', gapTop, gapHeight);
+          replaceCanvasWithGap('hover', gapTop, gapHeight);
+          wrapper.style.height = `${canvasRefs.image.canvas.height}px`;
+
+          bindEvents(); // Rebind events for new canvases
+          canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
+          firstClickY = null;
+          sliceMode = false;
+          sliceBtn.textContent = 'Insert Space Mode';
+          sliceBtn.style.backgroundColor = '';
+          return;
+        }
+
+        drawing = true;
+        path = [{ x, y }];
+        canvasRefs.draw.ctx.strokeStyle = currentColor;
+        canvasRefs.draw.ctx.lineWidth = currentThickness;
+        canvasRefs.draw.ctx.beginPath();
+        canvasRefs.draw.ctx.moveTo(x, y);
+      };
+
+      drawCanvas.onpointermove = (e) => {
+        if (e.pointerType !== 'pen') return;
+
+        const { x, y } = getCanvasCoordinates(e, drawCanvas);
+        canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
+
+        if (sliceMode) {
+          canvasRefs.hover.ctx.strokeStyle = 'red';
+          canvasRefs.hover.ctx.lineWidth = 1;
+          canvasRefs.hover.ctx.beginPath();
+          canvasRefs.hover.ctx.moveTo(0, y);
+          canvasRefs.hover.ctx.lineTo(canvasRefs.hover.canvas.width, y);
+          canvasRefs.hover.ctx.stroke();
+          return;
+        }
+
+        if (!drawing) return;
+
+        path.push({ x, y });
+        canvasRefs.draw.ctx.lineTo(x, y);
+        canvasRefs.draw.ctx.stroke();
+      };
+
+      drawCanvas.onpointerup = (e) => {
+        if (e.pointerType !== 'pen') return;
+
+        if (drawing && path.length > 1) {
+          const stroke = {
+            points: path,
+            color: currentColor,
+            thickness: currentThickness
+          };
+          annotationHistory.push(stroke);
+          undoHistory.push({ type: 'annotation', pageHistory: annotationHistory });
+        }
+        drawing = false;
+      };
+
+      drawCanvas.onpointerleave = (e) => {
+        if (e.pointerType !== 'pen') return;
+        drawing = false;
+        canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
+      };
+    }
+
+    bindEvents();
+
+    undoBtn.addEventListener('click', () => {
+      if (!lastStylusUsed) return alert("Undo is only available with stylus input.");
+
+      const last = undoHistory.pop();
+      if (!last) return alert("Nothing to undo.");
+
+      if (last.type === 'annotation') {
+        last.pageHistory.pop();
+        redrawAnnotations();
+      } else if (last.type === 'insert') {
+        const { canvasRefs: cr, state, wrapper: wrap } = last;
+
+        const restore = (canvas, dataURL, height) => {
+          const img = new Image();
+          img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+          };
+          img.src = dataURL;
+        };
+
+        restore(cr.image.canvas, state.image, state.height);
+        restore(cr.draw.canvas, state.draw, state.height);
+        restore(cr.hover.canvas, state.hover, state.height);
+        wrap.style.height = `${state.height}px`;
+
+        bindEvents();
+      }
+    });
+  }
+</script>
+</body>
+</html>
