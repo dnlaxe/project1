@@ -33,13 +33,14 @@
     }
 
     .container {
-      max-width: 1200px;
       margin: 0 auto;
+      padding: 0 0; /* Add this */
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
     }
+
 
     .logo {
       font-size: 2rem;
@@ -72,13 +73,14 @@
 
     section {
       min-height: 100dvh;
-      padding: 6rem 1.5rem 3rem;
+      padding: 0 1.5rem; /* 🔽 reduced vertical padding */
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: center; /* ✅ centers content vertically */
       align-items: center;
       text-align: center;
     }
+
 
     h2 {
       font-weight: 700;
@@ -108,15 +110,6 @@
       font-family: "Quicksand", sans-serif;
     }
 
-    .checker-photo {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background-size: cover;
-      background-position: center;
-      border: 2px solid #2e2e2e;
-    }
-
     .checklist {
       text-align: left;
       font-size: 1.1rem;
@@ -134,19 +127,30 @@
       width: 1.5em;
     }
 
-    .checkers {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 2rem;
-      margin-top: 1rem;
+    footer {
+      background-color: #2e2e2e;
+      color: #f2f2f2;
+      padding: 4rem 2rem;
+      font-size: 1.1rem;
+      text-align: center;
     }
 
-    footer {
-      text-align: center;
-      padding: 2rem;
-      font-size: 1rem;
-      color: #777;
+    footer .footer-links {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    footer .footer-links a {
+      color: #f2f2f2;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    footer .footer-links a:hover {
+      text-decoration: underline;
     }
 
     #citation {
@@ -175,15 +179,6 @@
       .cta-button {
         font-size: 1.3rem;
         padding: 1.2rem 3rem;
-      }
-
-      .checker-photo {
-        width: 200px;
-        height: 200px;
-      }
-
-      .checkers {
-        gap: 3rem;
       }
     }
 
@@ -217,7 +212,6 @@
 
       .cta-button {
         font-size: 1rem;
-        width: 100%;
       }
 
       h2 {
@@ -256,13 +250,6 @@
   <section>
     <h2>Step 2: Choose Your Checkmate</h2>
     <p>Browse expert checkers. See their specialties, styles, and prices. Choose someone you connect with.</p>
-    <div class="checkers">
-      <div class="checker-photo" style="background-image: url('checker1.avif');"></div>
-      <div class="checker-photo" style="background-image: url('checker2.avif');"></div>
-      <div class="checker-photo" style="background-image: url('checker3.avif');"></div>
-      <div class="checker-photo" style="background-image: url('checker4.avif');"></div>
-      <div class="checker-photo" style="background-image: url('checker5.avif')"></div>
-    </div>
   </section>
 
   <section>
@@ -286,6 +273,12 @@
 
   <footer>
     © 2025 Checkmate. Learn better. Not just faster.
+    <div class="footer-links">
+      <a href="#">Contact</a>
+      <a href="#">FAQ</a>
+      <a href="#">Terms</a>
+      <a href="#">Privacy</a>
+    </div>
   </footer>
 
 </body>
