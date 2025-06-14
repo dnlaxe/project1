@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PDF Editor (Pen Only Drawing)</title>
+  <title>PDF Editor with Undo</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     body {
@@ -47,7 +47,6 @@
       z-index: 10;
       pointer-events: auto;
       cursor: crosshair;
-      touch-action: none; /* disable touch zoom/pan */
     }
 
     .image-layer {
@@ -100,11 +99,12 @@
   });
 
   enterFullscreenBtn.addEventListener('click', () => {
-    document.documentElement.requestFullscreen?.();
+    const docElm = document.documentElement;
+    docElm.requestFullscreen?.() || docElm.webkitRequestFullscreen?.() || docElm.msRequestFullscreen?.();
   });
 
   exitFullscreenBtn.addEventListener('click', () => {
-    document.exitFullscreen?.();
+    document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.msExitFullscreen?.();
   });
 
   document.addEventListener('fullscreenchange', () => {
@@ -132,10 +132,9 @@
   });
 
   function getCanvasCoordinates(e, canvas) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+    const scaleX = canvas.width / canvas.clientWidth;
+    const scaleY = canvas.height / canvas.clientHeight;
+    return { x: e.offsetX * scaleX, y: e.offsetY * scaleY };
   }
 
   function copyCanvasWithGap(src, gapTop, gapHeight) {
@@ -160,6 +159,7 @@
     ctx.lineWidth = thickness;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
+
     ctx.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length - 1; i++) {
       const midX = (points[i].x + points[i + 1].x) / 2;
@@ -180,16 +180,16 @@
     imageCtx.drawImage(renderCanvas, 0, 0);
 
     const drawCanvas = document.createElement('canvas');
+    const drawCtx = drawCanvas.getContext('2d');
     drawCanvas.className = 'draw-layer';
     drawCanvas.width = renderCanvas.width;
     drawCanvas.height = renderCanvas.height;
-    const drawCtx = drawCanvas.getContext('2d');
 
     const hoverCanvas = document.createElement('canvas');
+    const hoverCtx = hoverCanvas.getContext('2d');
     hoverCanvas.className = 'hover-layer';
     hoverCanvas.width = renderCanvas.width;
     hoverCanvas.height = renderCanvas.height;
-    const hoverCtx = hoverCanvas.getContext('2d');
 
     const canvasRefs = {
       image: { canvas: imageCanvas, ctx: imageCtx },
@@ -235,12 +235,8 @@
     function bindEvents() {
       const drawCanvas = canvasRefs.draw.canvas;
 
-      drawCanvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-
-      drawCanvas.addEventListener('pointerdown', (e) => {
-        if (e.pointerType !== 'pen') return;
+      drawCanvas.onmousedown = (e) => {
         const { x, y } = getCanvasCoordinates(e, drawCanvas);
-
         if (sliceMode) {
           if (firstClickY === null) {
             firstClickY = y;
@@ -281,45 +277,50 @@
 
         drawing = true;
         path = [{ x, y }];
-        e.preventDefault();
-      });
+      };
 
-      drawCanvas.addEventListener('pointermove', (e) => {
-        if (e.pointerType !== 'pen' || !drawing) return;
-
+      drawCanvas.onmousemove = (e) => {
         const { x, y } = getCanvasCoordinates(e, drawCanvas);
         canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
 
-        const pressure = e.pressure || 0.5;
-        const adjustedThickness = currentThickness * pressure;
+        if (sliceMode) {
+          canvasRefs.hover.ctx.strokeStyle = 'red';
+          canvasRefs.hover.ctx.lineWidth = 1;
+          canvasRefs.hover.ctx.beginPath();
+          canvasRefs.hover.ctx.moveTo(0, y);
+          canvasRefs.hover.ctx.lineTo(canvasRefs.hover.canvas.width, y);
+          canvasRefs.hover.ctx.stroke();
+          return;
+        }
+
+        if (!drawing) return;
 
         path.push({ x, y });
-        drawSmoothPath(canvasRefs.hover.ctx, path, currentColor, adjustedThickness);
-        e.preventDefault();
-      });
 
-      drawCanvas.addEventListener('pointerup', (e) => {
-        if (e.pointerType !== 'pen') return;
+        // Progressive real-time drawing
+        const tempPath = path.slice(-3);
+        if (tempPath.length >= 2) {
+          drawSmoothPath(canvasRefs.draw.ctx, tempPath, currentColor, currentThickness);
+        }
+      };
 
+      drawCanvas.onmouseup = () => {
         if (drawing && path.length > 1) {
           canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
-          drawSmoothPath(canvasRefs.draw.ctx, path, currentColor, currentThickness);
-
           annotationHistory.push({
-            points: path,
+            points: [...path],
             color: currentColor,
             thickness: currentThickness
           });
           undoHistory.push({ type: 'annotation', pageHistory: annotationHistory });
         }
         drawing = false;
-      });
+      };
 
-      drawCanvas.addEventListener('pointerleave', (e) => {
-        if (e.pointerType !== 'pen') return;
+      drawCanvas.onmouseleave = () => {
         drawing = false;
         canvasRefs.hover.ctx.clearRect(0, 0, canvasRefs.hover.canvas.width, canvasRefs.hover.canvas.height);
-      });
+      };
     }
 
     bindEvents();
@@ -356,5 +357,6 @@
     });
   }
 </script>
+
 </body>
 </html>
