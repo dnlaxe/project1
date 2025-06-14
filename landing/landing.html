@@ -24,17 +24,19 @@
     }
 
     header.site-header {
-      position: sticky;
+      position: fixed; /* change from sticky */
       top: 0;
+      width: 100%;      /* ensure full width */
       z-index: 1000;
       background-color: #f2f2f2;
       border-bottom: 1px solid #ddd;
       padding: 0.75rem 1.25rem;
     }
 
+
     .container {
       margin: 0 auto;
-      padding: 0 0; /* Add this */
+      padding: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -72,8 +74,8 @@
     }
 
     section {
+      padding: 0 1.5rem;
       min-height: 100dvh;
-      padding: 0 1.5rem; /* 🔽 reduced vertical padding */
       display: flex;
       flex-direction: column;
       justify-content: center; /* ✅ centers content vertically */
