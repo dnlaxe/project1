@@ -10,7 +10,8 @@
       margin: 0;
       padding: 0;
       height: 100%;
-      /* Removed overflow: hidden to allow vertical scroll */
+      overflow: hidden; /* Disable native scrolling/swiping */
+      touch-action: none; /* Prevent swipe gestures */
     }
     #container {
       position: relative;
@@ -33,10 +34,38 @@
       left: 10px;
       z-index: 10;
     }
+    #scrollButtons {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+    }
+    .scroll-button {
+      padding: 10px 15px;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      background-color: #444;
+      color: white;
+      cursor: pointer;
+      opacity: 0.8;
+    }
+    .scroll-button:hover {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
   <input type="file" id="fileInput" accept="image/*" />
+
+  <div id="scrollButtons">
+    <button class="scroll-button" onclick="scrollPage(-100)">▲ Up</button>
+    <button class="scroll-button" onclick="scrollPage(100)">▼ Down</button>
+  </div>
+
   <div id="container">
     <img id="imageLayer" />
     <div id="stageContainer"></div>
@@ -73,6 +102,8 @@
       stageContainer.style.height = height + 'px';
       stageContainer.style.pointerEvents = 'auto';
 
+      container.style.height = height + 'px';
+
       stageContainer.innerHTML = ''; // Clear previous canvas
       stage = new Konva.Stage({
         container: 'stageContainer',
@@ -83,7 +114,7 @@
       layer = new Konva.Layer();
       stage.add(layer);
 
-      stage.on('mousedown touchstart', function (e) {
+      stage.on('mousedown touchstart', function () {
         isDrawing = true;
         const pos = stage.getPointerPosition();
         currentLine = new Konva.Line({
@@ -101,7 +132,7 @@
         layer.add(currentLine);
       });
 
-      stage.on('mousemove touchmove', function (e) {
+      stage.on('mousemove touchmove', function () {
         if (!isDrawing) return;
         const pos = stage.getPointerPosition();
         const newPoints = currentLine.points().concat([pos.x, pos.y]);
@@ -113,6 +144,14 @@
         isDrawing = false;
       });
     };
+
+    // Scroll handler (simulated scroll by translating container)
+    function scrollPage(delta) {
+      const currentTop = parseInt(container.style.marginTop || "0", 10);
+      const newTop = currentTop - delta;
+      const maxScroll = window.innerHeight - container.offsetHeight;
+      container.style.marginTop = Math.min(0, Math.max(maxScroll, newTop)) + 'px';
+    }
   </script>
 </body>
 </html>
