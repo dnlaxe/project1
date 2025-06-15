@@ -9,7 +9,7 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-      touch-action: none; /* Prevent gestures */
+      touch-action: none;
       height: 100%;
     }
 
@@ -149,7 +149,6 @@
       }
     });
 
-    // Pointer-based drawing (stylus-only in fullscreen)
     canvas.addEventListener('pointerdown', (e) => {
       if (isFullscreen() && e.pointerType !== 'pen') return;
       drawing = true;
@@ -169,7 +168,6 @@
     canvas.addEventListener('pointerup', () => drawing = false);
     canvas.addEventListener('pointerleave', () => drawing = false);
 
-    // Resize canvas on window resize
     window.addEventListener('resize', () => {
       if (img.src) {
         canvas.width = img.clientWidth;
@@ -180,23 +178,41 @@
       }
     });
 
-    // Show/hide stylus-only message on fullscreen toggle
     document.addEventListener('fullscreenchange', () => {
       fullscreenMessage.style.display = isFullscreen() ? 'block' : 'none';
     });
 
-    // Stylus-only scroll control
-    document.getElementById('scroll-up').addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'pen') {
-        scrollByAmount(-100);
-      }
-    });
+    let scrollInterval;
 
-    document.getElementById('scroll-down').addEventListener('pointerdown', (e) => {
+    function startScroll(amount) {
+      scrollInterval = setInterval(() => {
+        scrollByAmount(amount);
+      }, 50);
+    }
+
+    function stopScroll() {
+      clearInterval(scrollInterval);
+    }
+
+    const scrollUpBtn = document.getElementById('scroll-up');
+    scrollUpBtn.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'pen') {
-        scrollByAmount(100);
+        startScroll(-10);
       }
     });
+    scrollUpBtn.addEventListener('pointerup', stopScroll);
+    scrollUpBtn.addEventListener('pointerleave', stopScroll);
+    scrollUpBtn.addEventListener('pointercancel', stopScroll);
+
+    const scrollDownBtn = document.getElementById('scroll-down');
+    scrollDownBtn.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'pen') {
+        startScroll(10);
+      }
+    });
+    scrollDownBtn.addEventListener('pointerup', stopScroll);
+    scrollDownBtn.addEventListener('pointerleave', stopScroll);
+    scrollDownBtn.addEventListener('pointercancel', stopScroll);
   </script>
 </body>
 </html>
