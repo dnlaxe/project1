@@ -2,24 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Image Annotator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Scrollable Image Annotator</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden;
-      height: 100%;
+      overflow-x: hidden;
     }
 
-    #container {
+    #controls {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    #image-container {
       position: relative;
       width: 100vw;
-      height: 100vh;
-      background-color: black;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
     }
 
     #img {
@@ -34,25 +38,17 @@
       left: 0;
       z-index: 10;
       display: none;
-    }
-
-    #controls {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 20;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 10px;
-      border-radius: 5px;
+      pointer-events: none; /* Let mouse events pass through initially */
     }
   </style>
 </head>
 <body>
-  <div id="container">
-    <div id="controls">
-      <input type="file" id="fileInput" accept="image/*">
-      <button id="fullscreen-btn">Go Fullscreen</button>
-    </div>
+  <div id="controls">
+    <input type="file" id="fileInput" accept="image/*">
+    <button id="fullscreen-btn">Go Fullscreen</button>
+  </div>
+
+  <div id="image-container">
     <img id="img">
     <canvas id="canvas"></canvas>
   </div>
@@ -62,7 +58,7 @@
     const img = document.getElementById('img');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const container = document.getElementById('container');
+    const container = document.getElementById('image-container');
     const fullscreenBtn = document.getElementById('fullscreen-btn');
 
     let drawing = false;
@@ -80,38 +76,32 @@
     });
 
     img.onload = () => {
-      // Wait for image to render to get accurate size
-      setTimeout(() => {
-        canvas.width = img.clientWidth;
-        canvas.height = img.clientHeight;
-        canvas.style.width = img.clientWidth + 'px';
-        canvas.style.height = img.clientHeight + 'px';
-        canvas.style.display = 'block';
-        canvas.style.top = img.offsetTop + 'px';
-        canvas.style.left = img.offsetLeft + 'px';
-      }, 50);
+      canvas.width = img.clientWidth;
+      canvas.height = img.clientHeight;
+      canvas.style.width = img.clientWidth + 'px';
+      canvas.style.height = img.clientHeight + 'px';
+      canvas.style.display = 'block';
+      canvas.style.pointerEvents = 'auto'; // Enable drawing after load
     };
 
     fullscreenBtn.addEventListener('click', () => {
-      if (container.requestFullscreen) {
-        container.requestFullscreen();
-      } else if (container.webkitRequestFullscreen) {
-        container.webkitRequestFullscreen();
-      } else if (container.msRequestFullscreen) {
-        container.msRequestFullscreen();
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
       }
     });
 
-    // Drawing on canvas
+    // Drawing
     canvas.addEventListener('mousedown', (e) => {
       drawing = true;
+      const rect = canvas.getBoundingClientRect();
       ctx.beginPath();
-      ctx.moveTo(e.offsetX, e.offsetY);
+      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
     });
 
     canvas.addEventListener('mousemove', (e) => {
       if (drawing) {
-        ctx.lineTo(e.offsetX, e.offsetY);
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
         ctx.stroke();
       }
     });
@@ -124,10 +114,14 @@
       drawing = false;
     });
 
-    // Resize canvas on window resize
+    // Handle resize
     window.addEventListener('resize', () => {
-      if (img.style.display === 'block') {
-        img.onload();
+      if (img.src) {
+        // Resize canvas to match new image size
+        canvas.width = img.clientWidth;
+        canvas.height = img.clientHeight;
+        canvas.style.width = img.clientWidth + 'px';
+        canvas.style.height = img.clientHeight + 'px';
       }
     });
   </script>
