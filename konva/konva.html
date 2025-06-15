@@ -77,77 +77,61 @@
     <button id="scrollDown">▼</button>
   </div>
 
-<script>
-  const fileInput = document.getElementById('fileInput');
-  const displayImage = document.getElementById('displayImage');
-  const imageContainer = document.getElementById('image-container');
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const displayImage = document.getElementById('displayImage');
+    const imageContainer = document.getElementById('image-container');
 
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = function (evt) {
-        displayImage.src = evt.target.result;
-        displayImage.style.display = 'block';
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-
-  let scrollDirection = 0;
-  let animationFrameId = null;
-
-  function scrollStep() {
-    if (scrollDirection !== 0) {
-      imageContainer.scrollTop += scrollDirection * 10;
-      animationFrameId = requestAnimationFrame(scrollStep);
-    }
-  }
-
-  function startScrolling(direction) {
-    scrollDirection = direction;
-    if (!animationFrameId) {
-      scrollStep();
-    }
-  }
-
-  function stopScrolling() {
-    scrollDirection = 0;
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  }
-
-  const upBtn = document.getElementById('scrollUp');
-  const downBtn = document.getElementById('scrollDown');
-
-  function attachScrollEvents(button, direction) {
-    // Mouse
-    button.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      startScrolling(direction);
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+          displayImage.src = evt.target.result;
+          displayImage.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
     });
-    button.addEventListener('mouseup', stopScrolling);
-    button.addEventListener('mouseleave', stopScrolling);
 
-    // Touch
-    button.addEventListener('touchstart', (e) => {
+    const scrollSpeed = 500;
+    let scrollInterval;
+
+    function startScrolling(direction) {
+      scrollInterval = setInterval(() => {
+        imageContainer.scrollTop += direction * scrollSpeed;
+      }, 10);
+    }
+
+    function stopScrolling() {
+      clearInterval(scrollInterval);
+    }
+
+    const upBtn = document.getElementById('scrollUp');
+    const downBtn = document.getElementById('scrollDown');
+
+    function attachScrollEvents(button, direction) {
+      button.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startScrolling(direction);
+      });
+      button.addEventListener('mouseup', stopScrolling);
+      button.addEventListener('mouseleave', stopScrolling);
+
+      button.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startScrolling(direction);
+      }, { passive: false });
+      button.addEventListener('touchend', stopScrolling);
+    }
+
+    attachScrollEvents(upBtn, -1);
+    attachScrollEvents(downBtn, 1);
+
+    // Prevent touch scrolling
+    document.addEventListener('touchmove', function(e) {
       e.preventDefault();
-      startScrolling(direction);
     }, { passive: false });
-
-    button.addEventListener('touchend', stopScrolling);
-    button.addEventListener('touchcancel', stopScrolling);
-    button.addEventListener('touchmove', stopScrolling); // safety net
-  }
-
-  attachScrollEvents(upBtn, -1);
-  attachScrollEvents(downBtn, 1);
-
-  // Fully disable touch scroll gestures
-  document.addEventListener('touchmove', function(e) {
-    e.preventDefault();
-  }, { passive: false });
-</script>
-
+  </script>
 </body>
 </html>
