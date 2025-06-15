@@ -15,14 +15,26 @@
       margin-bottom: 10px;
       flex-wrap: wrap;
     }
-    #container {
-      border: 1px solid #ccc;
+    #scrollWrapper {
       width: 100%;
       max-width: 100%;
+      overflow-y: hidden; /* enabled in fullscreen */
+      height: 600px;
+      position: relative;
+    }
+    #container {
+      width: 100%;
       overflow: hidden;
     }
     canvas {
       cursor: crosshair;
+    }
+    :fullscreen #scrollWrapper {
+      overflow-y: auto;
+      height: 100vh;
+    }
+    :fullscreen canvas {
+      touch-action: none;
     }
     .tool-group {
       display: inline-block;
@@ -83,13 +95,17 @@
     </div>
   </div>
 
-  <div id="container"></div>
+  <div id="scrollWrapper">
+    <div id="container"></div>
+  </div>
 
   <script>
+    const scrollWrapper = document.getElementById('scrollWrapper');
+
     const stage = new Konva.Stage({
       container: 'container',
       width: window.innerWidth,
-      height: 600,
+      height: scrollWrapper.clientHeight,
     });
 
     const imageLayer = new Konva.Layer();
