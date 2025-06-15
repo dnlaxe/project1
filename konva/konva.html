@@ -1,383 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Image Annotator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 10px;
+    body, html {
       margin: 0;
-    }
-    #toolbar {
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-    #container {
-      border: 1px solid #ccc;
-      width: 100%;
-      max-width: 100%;
+      padding: 0;
+      height: 100%;
       overflow: hidden;
     }
-    canvas {
-      cursor: crosshair;
+
+    #container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #000;
     }
-    .tool-group {
-      display: inline-block;
-      margin-right: 20px;
+
+    #img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+    }
+
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      display: none;
+    }
+
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 20;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    #fullscreen-btn {
       margin-top: 5px;
-    }
-    .tool-group label {
-      margin-right: 5px;
-    }
-    .tool-button {
-      padding: 5px 10px;
-      margin-right: 5px;
-      border: 1px solid #aaa;
-      background-color: #f5f5f5;
-      cursor: pointer;
-    }
-    .tool-button.active {
-      border: 2px solid #000;
     }
   </style>
 </head>
 <body>
-  <div id="toolbar">
-    <input type="file" id="imageLoader" accept="image/*" />
-
-    <div class="tool-group">
-      <label>Color:</label>
-      <button class="tool-button color" data-color="green" style="background-color: green;"></button>
-      <button class="tool-button color" data-color="blue" style="background-color: blue;"></button>
-      <button class="tool-button color" data-color="orange" style="background-color: orange;"></button>
+  <div id="container">
+    <div id="controls">
+      <input type="file" id="fileInput" accept="image/*">
+      <button id="fullscreen-btn">Go Fullscreen</button>
     </div>
-
-    <div class="tool-group">
-      <label>Thickness:</label>
-      <button class="tool-button thickness" data-size="2">Thin</button>
-      <button class="tool-button thickness" data-size="5">Middle</button>
-      <button class="tool-button thickness" data-size="10">Thick</button>
-    </div>
-
-    <div class="tool-group">
-      <label>
-        <input type="checkbox" id="shadowToggle" />
-        Shadow
-      </label>
-    </div>
-
-    <div class="tool-group">
-      <button id="undoBtn" class="tool-button">Undo</button>
-    </div>
-
-    <div class="tool-group">
-      <button id="insertSpaceBtn" class="tool-button">Insert White Space</button>
-    </div>
-
-    <div class="tool-group">
-      <button id="enterFullscreen" class="tool-button">Go Fullscreen</button>
-      <button id="exitFullscreen" class="tool-button">Exit Fullscreen</button>
-    </div>
+    <img id="img">
+    <canvas id="canvas"></canvas>
   </div>
 
-  <div id="container"></div>
-
   <script>
-    const stage = new Konva.Stage({
-      container: 'container',
-      width: window.innerWidth,
-      height: 600,
-    });
+    const fileInput = document.getElementById('fileInput');
+    const img = document.getElementById('img');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('container');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
 
-    const imageLayer = new Konva.Layer();
-    const drawLayer = new Konva.Layer();
-    stage.add(imageLayer);
-    stage.add(drawLayer);
+    let drawing = false;
 
-    let isDrawing = false;
-    let currentLine = null;
-
-    let currentColor = 'green';
-    let currentThickness = 2;
-    let shadowEnabled = false;
-
-    const lines = [];
-    const insertedSpaces = [];
-
-    let insertSpaceMode = false;
-    let firstClickY = null;
-    let originalImageObj = null;
-    let imageNaturalWidth = 0;
-    let imageNaturalHeight = 0;
-    let imageDisplayWidth = 0;
-    let imageDisplayHeight = 0;
-
-    let isFullscreen = false;
-
-    const insertSpaceBtn = document.getElementById('insertSpaceBtn');
-    insertSpaceBtn.addEventListener('click', () => {
-      insertSpaceMode = true;
-      firstClickY = null;
-      setActiveButton([], insertSpaceBtn);
-      stage.container().style.cursor = 'copy';
-    });
-
-    stage.on('mousedown touchstart', (e) => {
-      if (isFullscreen && e.evt.pointerType && e.evt.pointerType !== 'pen') return;
-
-      if (insertSpaceMode) {
-        const pos = stage.getPointerPosition();
-        const clickY = pos.y;
-
-        if (firstClickY === null) {
-          firstClickY = clickY;
-        } else {
-          if (clickY <= firstClickY) {
-            alert('Second click must be beneath the first click.');
-            return;
-          }
-
-          const y1 = firstClickY;
-          const y2 = clickY;
-          const delta = y2 - y1;
-          insertedSpaces.push({ y: y1, delta: delta });
-
-          drawLayer.getChildren().forEach(line => {
-            const oldPoints = line.points();
-            const newPoints = [];
-            for (let i = 0; i < oldPoints.length; i += 2) {
-              const x = oldPoints[i];
-              let y = oldPoints[i + 1];
-              if (y >= y1) y += delta;
-              newPoints.push(x, y);
-            }
-            line.points(newPoints);
-          });
-
-          if (originalImageObj) {
-            imageLayer.destroyChildren();
-
-            const scaleY = imageDisplayHeight / imageNaturalHeight;
-            const slices = [];
-            const sorted = [...insertedSpaces].sort((a, b) => a.y - b.y);
-
-            let sourceY = 0;
-            let displayY = 0;
-
-            for (let s of sorted) {
-              const cutDisplayY = s.y;
-              const cutSourceY = cutDisplayY / scaleY;
-              const displayHeight = cutDisplayY - displayY;
-              const sourceHeight = cutSourceY - sourceY;
-
-              slices.push({
-                cropY: sourceY,
-                displayY: displayY,
-                height: displayHeight,
-                cropHeight: sourceHeight
-              });
-
-              displayY += displayHeight + s.delta;
-              sourceY = cutSourceY;
-            }
-
-            const remainingSourceHeight = imageNaturalHeight - sourceY;
-            const remainingDisplayHeight = remainingSourceHeight * scaleY;
-            slices.push({
-              cropY: sourceY,
-              displayY: displayY,
-              height: remainingDisplayHeight,
-              cropHeight: remainingSourceHeight
-            });
-
-            for (let s of slices) {
-              const img = new Konva.Image({
-                image: originalImageObj,
-                x: 0,
-                y: s.displayY,
-                width: imageDisplayWidth,
-                height: s.height,
-                crop: {
-                  x: 0,
-                  y: s.cropY,
-                  width: imageNaturalWidth,
-                  height: s.cropHeight
-                }
-              });
-              imageLayer.add(img);
-            }
-          }
-
-          stage.height(stage.height() + delta);
-          imageDisplayHeight += delta;
-
-          imageLayer.batchDraw();
-          drawLayer.batchDraw();
-
-          insertSpaceMode = false;
-          firstClickY = null;
-          insertSpaceBtn.classList.remove('active');
-          stage.container().style.cursor = 'crosshair';
-        }
-        return;
-      }
-
-      isDrawing = true;
-      const pos = stage.getPointerPosition();
-
-      currentLine = new Konva.Line({
-        stroke: currentColor,
-        strokeWidth: currentThickness,
-        globalCompositeOperation: 'source-over',
-        points: [pos.x, pos.y],
-        lineCap: 'round',
-        lineJoin: 'round',
-        ...(shadowEnabled && {
-          shadowColor: currentColor,
-          shadowBlur: 5,
-          shadowOffset: { x: 2, y: 2 },
-          shadowOpacity: 0.6,
-        }),
-      });
-
-      drawLayer.add(currentLine);
-      lines.push(currentLine);
-    });
-
-    stage.on('mousemove touchmove', (e) => {
-      if (isFullscreen && e.evt.pointerType && e.evt.pointerType !== 'pen') return;
-      if (!isDrawing || !currentLine) return;
-
-      const pos = stage.getPointerPosition();
-      const newPoints = currentLine.points().concat([pos.x, pos.y]);
-      currentLine.points(newPoints);
-      drawLayer.batchDraw();
-    });
-
-    stage.on('mouseup touchend', (e) => {
-      if (isFullscreen && e.evt.pointerType && e.evt.pointerType !== 'pen') return;
-      isDrawing = false;
-      currentLine = null;
-    });
-
-    document.getElementById('undoBtn').addEventListener('click', () => {
-      if (lines.length > 0) {
-        const lastLine = lines.pop();
-        lastLine.destroy();
-        drawLayer.draw();
-      }
-    });
-
-    document.getElementById('imageLoader').addEventListener('change', function (e) {
+    fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
-      const reader = new FileReader();
-
-      reader.onload = function (evt) {
-        const img = new Image();
-        img.onload = function () {
-          const containerWidth = window.innerWidth - 20;
-          const scale = containerWidth / img.width;
-          const scaledWidth = containerWidth;
-          const scaledHeight = img.height * scale;
-
-          originalImageObj = img;
-          imageNaturalWidth = img.width;
-          imageNaturalHeight = img.height;
-          imageDisplayWidth = scaledWidth;
-          imageDisplayHeight = scaledHeight;
-          insertedSpaces.length = 0;
-
-          stage.width(scaledWidth);
-          stage.height(scaledHeight);
-
-          imageLayer.destroyChildren();
-          drawLayer.destroyChildren();
-          lines.length = 0;
-
-          const konvaImage = new Konva.Image({
-            image: img,
-            x: 0,
-            y: 0,
-            width: scaledWidth,
-            height: scaledHeight,
-          });
-
-          imageLayer.add(konvaImage);
-          imageLayer.draw();
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          img.src = reader.result;
+          img.onload = () => {
+            canvas.width = img.clientWidth;
+            canvas.height = img.clientHeight;
+            canvas.style.display = 'block';
+            img.style.display = 'block';
+          };
         };
-        img.src = evt.target.result;
-      };
-
-      reader.readAsDataURL(file);
-    });
-
-    function setActiveButton(buttons, selectedButton) {
-      buttons.forEach(btn => btn.classList.remove('active'));
-      if (selectedButton) {
-        selectedButton.classList.add('active');
-      }
-    }
-
-    const colorButtons = Array.from(document.querySelectorAll('.tool-button.color'));
-    colorButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentColor = btn.dataset.color;
-        setActiveButton(colorButtons, btn);
-      });
-    });
-    setActiveButton(colorButtons, colorButtons[0]);
-
-    const thicknessButtons = Array.from(document.querySelectorAll('.tool-button.thickness'));
-    thicknessButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentThickness = parseInt(btn.dataset.size);
-        setActiveButton(thicknessButtons, btn);
-      });
-    });
-    setActiveButton(thicknessButtons, thicknessButtons[0]);
-
-    document.getElementById('shadowToggle').addEventListener('change', function (e) {
-      shadowEnabled = e.target.checked;
-    });
-
-    const enterFullscreenBtn = document.getElementById('enterFullscreen');
-    const exitFullscreenBtn = document.getElementById('exitFullscreen');
-
-    enterFullscreenBtn.addEventListener('click', () => {
-      isFullscreen = true;
-      const docEl = document.documentElement;
-      if (docEl.requestFullscreen) {
-        docEl.requestFullscreen();
-      } else if (docEl.webkitRequestFullscreen) {
-        docEl.webkitRequestFullscreen();
-      } else if (docEl.mozRequestFullScreen) {
-        docEl.mozRequestFullScreen();
-      } else if (docEl.msRequestFullscreen) {
-        docEl.msRequestFullscreen();
+        reader.readAsDataURL(file);
       }
     });
 
-    exitFullscreenBtn.addEventListener('click', () => {
-      isFullscreen = false;
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
+    fullscreenBtn.addEventListener('click', () => {
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+      } else if (container.msRequestFullscreen) {
+        container.msRequestFullscreen();
       }
     });
 
-    document.addEventListener('touchmove', function (e) {
-      if (isFullscreen) {
-        e.preventDefault();
+    // Drawing handlers
+    canvas.addEventListener('mousedown', (e) => {
+      drawing = true;
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (drawing) {
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
       }
-    }, { passive: false });
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      drawing = false;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      drawing = false;
+    });
+
+    // Adjust canvas size when resizing window
+    window.addEventListener('resize', () => {
+      if (img.src) {
+        canvas.width = img.clientWidth;
+        canvas.height = img.clientHeight;
+      }
+    });
   </script>
 </body>
 </html>
