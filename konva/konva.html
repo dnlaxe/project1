@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Scrollable Image Annotator</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden; /* Disable all native scrolling */
-      touch-action: none; /* Block gestures */
+      overflow: hidden;
+      touch-action: none; /* Prevent gestures */
       height: 100%;
     }
 
@@ -42,7 +42,7 @@
       position: relative;
       width: 100vw;
       height: 100vh;
-      overflow-y: hidden; /* Only scroll via buttons */
+      overflow-y: hidden;
       scroll-behavior: smooth;
     }
 
@@ -63,13 +63,27 @@
       left: 0;
       z-index: 10;
       display: none;
-      pointer-events: none;
+      pointer-events: auto;
+    }
+
+    #fullscreen-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      z-index: 2000;
+      display: none;
+      font-size: 18px;
     }
   </style>
 </head>
 <body>
   <div id="controls">
-    <input type="file" id="fileInput" accept="image/*">
+    <input type="file" id="fileInput" accept="image/*" />
     <button id="fullscreen-btn">Go Fullscreen</button>
   </div>
 
@@ -78,9 +92,11 @@
     <button onclick="scrollByAmount(100)">▼</button>
   </div>
 
+  <div id="fullscreen-message">Use a stylus to draw in fullscreen</div>
+
   <div id="scrollArea">
     <div id="image-container">
-      <img id="img">
+      <img id="img" />
       <canvas id="canvas"></canvas>
     </div>
   </div>
@@ -93,6 +109,7 @@
     const imageContainer = document.getElementById('image-container');
     const scrollArea = document.getElementById('scrollArea');
     const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const fullscreenMessage = document.getElementById('fullscreen-message');
 
     let drawing = false;
 
@@ -101,6 +118,10 @@
         top: amount,
         behavior: 'smooth'
       });
+    }
+
+    function isFullscreen() {
+      return document.fullscreenElement != null;
     }
 
     fileInput.addEventListener('change', (e) => {
@@ -121,9 +142,6 @@
       canvas.style.width = img.clientWidth + 'px';
       canvas.style.height = img.clientHeight + 'px';
       canvas.style.display = 'block';
-      canvas.style.pointerEvents = 'auto';
-
-      // Also adjust container height to allow scrolling
       imageContainer.style.height = img.clientHeight + 'px';
     };
 
@@ -133,24 +151,27 @@
       }
     });
 
-    canvas.addEventListener('mousedown', (e) => {
+    // Pointer-based drawing (stylus-only in fullscreen)
+    canvas.addEventListener('pointerdown', (e) => {
+      if (isFullscreen() && e.pointerType !== 'pen') return;
       drawing = true;
       const rect = canvas.getBoundingClientRect();
       ctx.beginPath();
       ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
     });
 
-    canvas.addEventListener('mousemove', (e) => {
-      if (drawing) {
-        const rect = canvas.getBoundingClientRect();
-        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-        ctx.stroke();
-      }
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drawing) return;
+      if (isFullscreen() && e.pointerType !== 'pen') return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.stroke();
     });
 
-    canvas.addEventListener('mouseup', () => drawing = false);
-    canvas.addEventListener('mouseleave', () => drawing = false);
+    canvas.addEventListener('pointerup', () => drawing = false);
+    canvas.addEventListener('pointerleave', () => drawing = false);
 
+    // Resize canvas on window resize
     window.addEventListener('resize', () => {
       if (img.src) {
         canvas.width = img.clientWidth;
@@ -159,6 +180,11 @@
         canvas.style.height = img.clientHeight + 'px';
         imageContainer.style.height = img.clientHeight + 'px';
       }
+    });
+
+    // Show/hide stylus-only message on fullscreen toggle
+    document.addEventListener('fullscreenchange', () => {
+      fullscreenMessage.style.display = isFullscreen() ? 'block' : 'none';
     });
   </script>
 </body>
