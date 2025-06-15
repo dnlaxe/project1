@@ -95,11 +95,11 @@
   });
 
   let scrollDirection = 0;
-  let animationFrameId;
+  let animationFrameId = null;
 
   function scrollStep() {
     if (scrollDirection !== 0) {
-      imageContainer.scrollTop += scrollDirection * 10; // Scroll step size
+      imageContainer.scrollTop += scrollDirection * 10;
       animationFrameId = requestAnimationFrame(scrollStep);
     }
   }
@@ -121,6 +121,7 @@
   const downBtn = document.getElementById('scrollDown');
 
   function attachScrollEvents(button, direction) {
+    // Mouse
     button.addEventListener('mousedown', (e) => {
       e.preventDefault();
       startScrolling(direction);
@@ -128,17 +129,21 @@
     button.addEventListener('mouseup', stopScrolling);
     button.addEventListener('mouseleave', stopScrolling);
 
+    // Touch
     button.addEventListener('touchstart', (e) => {
       e.preventDefault();
       startScrolling(direction);
     }, { passive: false });
+
     button.addEventListener('touchend', stopScrolling);
+    button.addEventListener('touchcancel', stopScrolling);
+    button.addEventListener('touchmove', stopScrolling); // safety net
   }
 
   attachScrollEvents(upBtn, -1);
   attachScrollEvents(downBtn, 1);
 
-  // Prevent touch scrolling
+  // Fully disable touch scroll gestures
   document.addEventListener('touchmove', function(e) {
     e.preventDefault();
   }, { passive: false });
