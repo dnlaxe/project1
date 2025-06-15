@@ -9,23 +9,28 @@
     body {
       font-family: sans-serif;
       margin: 0;
-      overflow: hidden;
+      /* overflow removed to allow scrolling */
     }
     #toolbar {
       margin-bottom: 10px;
       padding: 10px;
       background: #f0f0f0;
       border-bottom: 1px solid #ccc;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
     #container {
       border: 1px solid #ccc;
       width: 100%;
-      max-width: 100%;
-      overflow: hidden;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
     canvas {
       cursor: crosshair;
-      touch-action: none; /* Prevent browser gestures */
+      touch-action: none;
+      display: block;
     }
     .tool-group {
       display: inline-block;
@@ -81,7 +86,7 @@
       container: 'container',
       width: window.innerWidth,
       height: 600,
-      draggable: false  // Prevent moving the canvas
+      draggable: false
     });
 
     const imageLayer = new Konva.Layer();
@@ -91,12 +96,9 @@
 
     let isDrawing = false;
     let currentLine = null;
-
     let currentColor = 'green';
     let currentThickness = 2;
     let shadowEnabled = false;
-
-    // Stylus-only mode when in fullscreen
     let stylusOnlyMode = false;
 
     document.addEventListener('fullscreenchange', () => {
@@ -115,7 +117,10 @@
       }
     }
 
-    // Prevent finger scroll/gesture in fullscreen
+    document.getElementById('toolbar').addEventListener('pointerdown', (e) => {
+      stylusGuard(e);
+    }, true);
+
     document.addEventListener('touchstart', (e) => {
       if (stylusOnlyMode) e.preventDefault();
     }, { passive: false });
@@ -124,12 +129,6 @@
       if (stylusOnlyMode) e.preventDefault();
     }, { passive: false });
 
-    // Block finger interaction on toolbar
-    document.getElementById('toolbar').addEventListener('pointerdown', (e) => {
-      stylusGuard(e);
-    }, true);
-
-    // Drawing handlers
     stage.on('pointerdown', (e) => {
       if (stylusGuard(e.evt) === false) return;
 
@@ -157,7 +156,6 @@
 
     stage.on('pointermove', (e) => {
       if (stylusGuard(e.evt) === false || !isDrawing || !currentLine) return;
-
       const pos = stage.getPointerPosition();
       const newPoints = currentLine.points().concat([pos.x, pos.y]);
       currentLine.points(newPoints);
@@ -170,7 +168,6 @@
       currentLine = null;
     });
 
-    // Image loader
     document.getElementById('imageLoader').addEventListener('change', function (e) {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -206,7 +203,6 @@
       reader.readAsDataURL(file);
     });
 
-    // Tool selectors
     function setActiveButton(buttons, selectedButton) {
       buttons.forEach(btn => btn.classList.remove('active'));
       selectedButton.classList.add('active');
@@ -232,16 +228,14 @@
     });
     setActiveButton(thicknessButtons, thicknessButtons[0]);
 
-    // Shadow toggle
     document.getElementById('shadowToggle').addEventListener('change', function (e) {
       if (stylusGuard(e) === false) {
-        e.target.checked = !e.target.checked; // revert if blocked
+        e.target.checked = !e.target.checked;
         return;
       }
       shadowEnabled = e.target.checked;
     });
 
-    // Fullscreen button
     document.getElementById('fullscreenBtn').addEventListener('click', () => {
       const elem = document.documentElement;
       if (!document.fullscreenElement) {
