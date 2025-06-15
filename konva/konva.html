@@ -10,6 +10,7 @@
       font-family: sans-serif;
       padding: 10px;
       margin: 0;
+      touch-action: none; /* Prevent default gestures */
     }
     #toolbar {
       margin-bottom: 10px;
@@ -123,7 +124,9 @@
       stage.container().style.cursor = 'copy';
     });
 
-    stage.on('mousedown touchstart', () => {
+    stage.on('pointerdown', (e) => {
+      if (e.evt.pointerType !== 'pen') return;
+
       if (insertSpaceMode) {
         const pos = stage.getPointerPosition();
         const clickY = pos.y;
@@ -140,10 +143,8 @@
           const y2 = clickY;
           const delta = y2 - y1;
 
-          // Record the space insertion
           insertedSpaces.push({ y: y1, delta: delta });
 
-          // === Adjust drawings ===
           drawLayer.getChildren().forEach(line => {
             const oldPoints = line.points();
             const newPoints = [];
@@ -156,14 +157,12 @@
             line.points(newPoints);
           });
 
-          // === Regenerate image from scratch with slices ===
           if (originalImageObj) {
             imageLayer.destroyChildren();
 
             const scaleY = imageDisplayHeight / imageNaturalHeight;
             const slices = [];
 
-            // Sort space insertions
             const sorted = [...insertedSpaces].sort((a, b) => a.y - b.y);
 
             let sourceY = 0;
@@ -186,7 +185,6 @@
               sourceY = cutSourceY;
             }
 
-            // Final slice
             const remainingSourceHeight = imageNaturalHeight - sourceY;
             const remainingDisplayHeight = remainingSourceHeight * scaleY;
             slices.push({
@@ -214,14 +212,12 @@
             }
           }
 
-          // Update stage height
           stage.height(stage.height() + delta);
           imageDisplayHeight += delta;
 
           imageLayer.batchDraw();
           drawLayer.batchDraw();
 
-          // Reset tool
           insertSpaceMode = false;
           firstClickY = null;
           insertSpaceBtn.classList.remove('active');
@@ -252,7 +248,8 @@
       lines.push(currentLine);
     });
 
-    stage.on('mousemove touchmove', () => {
+    stage.on('pointermove', (e) => {
+      if (e.evt.pointerType !== 'pen') return;
       if (!isDrawing || !currentLine) return;
       const pos = stage.getPointerPosition();
       const newPoints = currentLine.points().concat([pos.x, pos.y]);
@@ -260,7 +257,8 @@
       drawLayer.batchDraw();
     });
 
-    stage.on('mouseup touchend', () => {
+    stage.on('pointerup', (e) => {
+      if (e.evt.pointerType !== 'pen') return;
       isDrawing = false;
       currentLine = null;
     });
@@ -345,33 +343,76 @@
       shadowEnabled = e.target.checked;
     });
 
-    // Fullscreen API
     const enterFullscreenBtn = document.getElementById('enterFullscreen');
     const exitFullscreenBtn = document.getElementById('exitFullscreen');
 
     enterFullscreenBtn.addEventListener('click', () => {
       const docEl = document.documentElement;
-      if (docEl.requestFullscreen) {
-        docEl.requestFullscreen();
-      } else if (docEl.webkitRequestFullscreen) {
-        docEl.webkitRequestFullscreen();
-      } else if (docEl.mozRequestFullScreen) {
-        docEl.mozRequestFullScreen();
-      } else if (docEl.msRequestFullscreen) {
-        docEl.msRequestFullscreen();
-      }
+      if (docEl.requestFullscreen) docEl.requestFullscreen();
+      else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+      else if (docEl.mozRequestFullScreen) docEl.mozRequestFullScreen();
+      else if (docEl.msRequestFullscreen) docEl.msRequestFullscreen();
     });
 
     exitFullscreenBtn.addEventListener('click', () => {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+    });
+
+    // Stylus-only block logic in fullscreen
+    let fullscreenStylusOnly = false;
+
+    function isFullscreen() {
+      return !!(document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement);
+    }
+
+    function handlePointerBlock(e) {
+      if (!fullscreenStylusOnly) return;
+      if (e.pointerType !== 'pen') {
+        e.preventDefault();
+        e.stopPropagation();
       }
+    }
+
+    function handleTouchBlock(e) {
+      if (fullscreenStylusOnly) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+
+    function enableStylusOnlyMode() {
+      fullscreenStylusOnly = true;
+      document.addEventListener('pointerdown', handlePointerBlock, true);
+      document.addEventListener('pointermove', handlePointerBlock, true);
+      document.addEventListener('touchstart', handleTouchBlock, { passive: false, capture: true });
+      document.addEventListener('touchmove', handleTouchBlock, { passive: false, capture: true });
+    }
+
+    function disableStylusOnlyMode() {
+      fullscreenStylusOnly = false;
+      document.removeEventListener('pointerdown', handlePointerBlock, true);
+      document.removeEventListener('pointermove', handlePointerBlock, true);
+      document.removeEventListener('touchstart', handleTouchBlock, { capture: true });
+      document.removeEventListener('touchmove', handleTouchBlock, { capture: true });
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      if (isFullscreen()) enableStylusOnlyMode();
+      else disableStylusOnlyMode();
+    });
+    document.addEventListener('webkitfullscreenchange', () => {
+      if (isFullscreen()) enableStylusOnlyMode();
+      else disableStylusOnlyMode();
+    });
+    document.addEventListener('mozfullscreenchange', () => {
+      if (isFullscreen()) enableStylusOnlyMode();
+      else disableStylusOnlyMode();
     });
   </script>
 </body>
