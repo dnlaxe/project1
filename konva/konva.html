@@ -88,11 +88,9 @@
   </div>
 
   <div id="scroll-controls">
-    <button onclick="scrollByAmount(-100)">▲</button>
-    <button onclick="scrollByAmount(100)">▼</button>
+    <button id="scroll-up">▲</button>
+    <button id="scroll-down">▼</button>
   </div>
-
-  <div id="fullscreen-message">Use a stylus to draw in fullscreen</div>
 
   <div id="scrollArea">
     <div id="image-container">
@@ -185,6 +183,19 @@
     // Show/hide stylus-only message on fullscreen toggle
     document.addEventListener('fullscreenchange', () => {
       fullscreenMessage.style.display = isFullscreen() ? 'block' : 'none';
+    });
+
+    // Stylus-only scroll control
+    document.getElementById('scroll-up').addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'pen') {
+        scrollByAmount(-100);
+      }
+    });
+
+    document.getElementById('scroll-down').addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'pen') {
+        scrollByAmount(100);
+      }
     });
   </script>
 </body>
