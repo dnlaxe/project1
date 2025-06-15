@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Image Annotator</title>
   <script src="https://unpkg.com/konva@9/konva.min.js"></script>
   <style>
@@ -11,7 +11,7 @@
       padding: 0;
       height: 100%;
       overflow: hidden; /* Disable native scrolling/swiping */
-      touch-action: none; /* Prevent swipe gestures */
+      touch-action: none;
     }
     #container {
       position: relative;
@@ -41,7 +41,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      z-index: 10;
+      z-index: 1000;
     }
     .scroll-button {
       padding: 10px 15px;
@@ -61,6 +61,7 @@
 <body>
   <input type="file" id="fileInput" accept="image/*" />
 
+  <!-- Moved outside the container -->
   <div id="scrollButtons">
     <button class="scroll-button" onclick="scrollPage(-100)">▲ Up</button>
     <button class="scroll-button" onclick="scrollPage(100)">▼ Down</button>
@@ -145,7 +146,7 @@
       });
     };
 
-    // Scroll handler (simulated scroll by translating container)
+    // Scroll simulation
     function scrollPage(delta) {
       const currentTop = parseInt(container.style.marginTop || "0", 10);
       const newTop = currentTop - delta;
