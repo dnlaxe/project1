@@ -1,157 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Image Annotator</title>
-  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Viewer</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      overflow: hidden; /* Disable native scrolling/swiping */
-      touch-action: none;
+      overflow: hidden; /* disable normal scrolling */
+      height: 100vh;
     }
-    #container {
-      position: relative;
-      width: 100%;
+    #imageContainer {
+      width: 100vw;
+      overflow-y: scroll;
+      scroll-behavior: smooth;
+      height: 100vh;
     }
-    #imageLayer {
-      width: 100%;
+    img {
+      width: 100vw;
       height: auto;
       display: block;
     }
-    #stageContainer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-    }
-    #fileInput {
+    #controls {
       position: fixed;
       top: 10px;
-      left: 10px;
-      z-index: 10;
-    }
-    #scrollButtons {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
+      right: 10px;
       display: flex;
       flex-direction: column;
       gap: 10px;
       z-index: 1000;
     }
-    .scroll-button {
-      padding: 10px 15px;
-      font-size: 18px;
-      border: none;
-      border-radius: 5px;
-      background-color: #444;
-      color: white;
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
       cursor: pointer;
-      opacity: 0.8;
-    }
-    .scroll-button:hover {
-      opacity: 1;
     }
   </style>
 </head>
 <body>
-  <input type="file" id="fileInput" accept="image/*" />
-
-  <!-- Moved outside the container -->
-  <div id="scrollButtons">
-    <button class="scroll-button" onclick="scrollPage(-100)">▲ Up</button>
-    <button class="scroll-button" onclick="scrollPage(100)">▼ Down</button>
+  <input type="file" id="fileInput" accept="image/*">
+  <div id="controls">
+    <button onclick="scrollUp()">⬆ Scroll Up</button>
+    <button onclick="scrollDown()">⬇ Scroll Down</button>
   </div>
-
-  <div id="container">
-    <img id="imageLayer" />
-    <div id="stageContainer"></div>
-  </div>
+  <div id="imageContainer"></div>
 
   <script>
     const fileInput = document.getElementById('fileInput');
-    const imgElement = document.getElementById('imageLayer');
-    const stageContainer = document.getElementById('stageContainer');
-    const container = document.getElementById('container');
+    const imageContainer = document.getElementById('imageContainer');
 
-    let stage, layer, isDrawing = false, currentLine;
-
-    fileInput.addEventListener('change', function (e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        imgElement.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
+    fileInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          imageContainer.innerHTML = `<img src="${e.target.result}" alt="Selected Image">`;
+        }
+        reader.readAsDataURL(file);
+      }
     });
 
-    imgElement.onload = function () {
-      const width = window.innerWidth;
-      const aspectRatio = imgElement.naturalHeight / imgElement.naturalWidth;
-      const height = width * aspectRatio;
+    function scrollUp() {
+      imageContainer.scrollBy({ top: -100, behavior: 'smooth' });
+    }
 
-      imgElement.style.width = width + 'px';
-      imgElement.style.height = height + 'px';
-
-      stageContainer.style.width = width + 'px';
-      stageContainer.style.height = height + 'px';
-      stageContainer.style.pointerEvents = 'auto';
-
-      container.style.height = height + 'px';
-
-      stageContainer.innerHTML = ''; // Clear previous canvas
-      stage = new Konva.Stage({
-        container: 'stageContainer',
-        width: width,
-        height: height
-      });
-
-      layer = new Konva.Layer();
-      stage.add(layer);
-
-      stage.on('mousedown touchstart', function () {
-        isDrawing = true;
-        const pos = stage.getPointerPosition();
-        currentLine = new Konva.Line({
-          stroke: 'orange',
-          strokeWidth: 4,
-          globalCompositeOperation: 'source-over',
-          points: [pos.x, pos.y],
-          lineCap: 'round',
-          lineJoin: 'round',
-          shadowColor: 'orange',
-          shadowBlur: 6,
-          shadowOffset: { x: 2, y: 2 },
-          shadowOpacity: 0.6
-        });
-        layer.add(currentLine);
-      });
-
-      stage.on('mousemove touchmove', function () {
-        if (!isDrawing) return;
-        const pos = stage.getPointerPosition();
-        const newPoints = currentLine.points().concat([pos.x, pos.y]);
-        currentLine.points(newPoints);
-        layer.batchDraw();
-      });
-
-      stage.on('mouseup touchend', function () {
-        isDrawing = false;
-      });
-    };
-
-    // Scroll simulation
-    function scrollPage(delta) {
-      const currentTop = parseInt(container.style.marginTop || "0", 10);
-      const newTop = currentTop - delta;
-      const maxScroll = window.innerHeight - container.offsetHeight;
-      container.style.marginTop = Math.min(0, Math.max(maxScroll, newTop)) + 'px';
+    function scrollDown() {
+      imageContainer.scrollBy({ top: 100, behavior: 'smooth' });
     }
   </script>
 </body>
