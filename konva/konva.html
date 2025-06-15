@@ -3,38 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Annotator</title>
-  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
   <style>
     body {
       font-family: sans-serif;
+      padding: 10px;
       margin: 0;
-      /* overflow removed to allow scrolling */
     }
     #toolbar {
       margin-bottom: 10px;
-      padding: 10px;
-      background: #f0f0f0;
-      border-bottom: 1px solid #ccc;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      flex-wrap: wrap;
     }
     #container {
       border: 1px solid #ccc;
       width: 100%;
-      height: 100%;
-      overflow-x: hidden;
-      overflow-y: auto;
+      max-width: 100%;
+      overflow: hidden;
     }
     canvas {
       cursor: crosshair;
-      touch-action: none;
-      display: block;
     }
     .tool-group {
       display: inline-block;
       margin-right: 20px;
+      margin-top: 5px;
     }
     .tool-group label {
       margin-right: 5px;
@@ -76,7 +69,18 @@
       </label>
     </div>
 
-    <button id="fullscreenBtn" class="tool-button">Fullscreen</button>
+    <div class="tool-group">
+      <button id="undoBtn" class="tool-button">Undo</button>
+    </div>
+
+    <div class="tool-group">
+      <button id="insertSpaceBtn" class="tool-button">Insert White Space</button>
+    </div>
+
+    <div class="tool-group">
+      <button id="enterFullscreen" class="tool-button">Go Fullscreen</button>
+      <button id="exitFullscreen" class="tool-button">Exit Fullscreen</button>
+    </div>
   </div>
 
   <div id="container"></div>
@@ -86,7 +90,6 @@
       container: 'container',
       width: window.innerWidth,
       height: 600,
-      draggable: false
     });
 
     const imageLayer = new Konva.Layer();
@@ -96,41 +99,131 @@
 
     let isDrawing = false;
     let currentLine = null;
+
     let currentColor = 'green';
     let currentThickness = 2;
     let shadowEnabled = false;
-    let stylusOnlyMode = false;
 
-    document.addEventListener('fullscreenchange', () => {
-      stylusOnlyMode = !!document.fullscreenElement;
+    const lines = [];
+    const insertedSpaces = [];
+
+    let insertSpaceMode = false;
+    let firstClickY = null;
+    let originalImageObj = null;
+    let imageNaturalWidth = 0;
+    let imageNaturalHeight = 0;
+    let imageDisplayWidth = 0;
+    let imageDisplayHeight = 0;
+
+    let isFullscreen = false;
+
+    const insertSpaceBtn = document.getElementById('insertSpaceBtn');
+    insertSpaceBtn.addEventListener('click', () => {
+      insertSpaceMode = true;
+      firstClickY = null;
+      setActiveButton([], insertSpaceBtn);
+      stage.container().style.cursor = 'copy';
     });
 
-    function isStylusEvent(evt) {
-      return evt.pointerType === 'pen';
-    }
+    stage.on('mousedown touchstart', (e) => {
+      if (isFullscreen && e.evt.pointerType && e.evt.pointerType !== 'pen') return;
 
-    function stylusGuard(evt) {
-      if (stylusOnlyMode && evt.pointerType !== 'pen') {
-        evt.preventDefault();
-        evt.stopImmediatePropagation();
-        return false;
+      if (insertSpaceMode) {
+        const pos = stage.getPointerPosition();
+        const clickY = pos.y;
+
+        if (firstClickY === null) {
+          firstClickY = clickY;
+        } else {
+          if (clickY <= firstClickY) {
+            alert('Second click must be beneath the first click.');
+            return;
+          }
+
+          const y1 = firstClickY;
+          const y2 = clickY;
+          const delta = y2 - y1;
+          insertedSpaces.push({ y: y1, delta: delta });
+
+          drawLayer.getChildren().forEach(line => {
+            const oldPoints = line.points();
+            const newPoints = [];
+            for (let i = 0; i < oldPoints.length; i += 2) {
+              const x = oldPoints[i];
+              let y = oldPoints[i + 1];
+              if (y >= y1) y += delta;
+              newPoints.push(x, y);
+            }
+            line.points(newPoints);
+          });
+
+          if (originalImageObj) {
+            imageLayer.destroyChildren();
+
+            const scaleY = imageDisplayHeight / imageNaturalHeight;
+            const slices = [];
+            const sorted = [...insertedSpaces].sort((a, b) => a.y - b.y);
+
+            let sourceY = 0;
+            let displayY = 0;
+
+            for (let s of sorted) {
+              const cutDisplayY = s.y;
+              const cutSourceY = cutDisplayY / scaleY;
+              const displayHeight = cutDisplayY - displayY;
+              const sourceHeight = cutSourceY - sourceY;
+
+              slices.push({
+                cropY: sourceY,
+                displayY: displayY,
+                height: displayHeight,
+                cropHeight: sourceHeight
+              });
+
+              displayY += displayHeight + s.delta;
+              sourceY = cutSourceY;
+            }
+
+            const remainingSourceHeight = imageNaturalHeight - sourceY;
+            const remainingDisplayHeight = remainingSourceHeight * scaleY;
+            slices.push({
+              cropY: sourceY,
+              displayY: displayY,
+              height: remainingDisplayHeight,
+              cropHeight: remainingSourceHeight
+            });
+
+            for (let s of slices) {
+              const img = new Konva.Image({
+                image: originalImageObj,
+                x: 0,
+                y: s.displayY,
+                width: imageDisplayWidth,
+                height: s.height,
+                crop: {
+                  x: 0,
+                  y: s.cropY,
+                  width: imageNaturalWidth,
+                  height: s.cropHeight
+                }
+              });
+              imageLayer.add(img);
+            }
+          }
+
+          stage.height(stage.height() + delta);
+          imageDisplayHeight += delta;
+
+          imageLayer.batchDraw();
+          drawLayer.batchDraw();
+
+          insertSpaceMode = false;
+          firstClickY = null;
+          insertSpaceBtn.classList.remove('active');
+          stage.container().style.cursor = 'crosshair';
+        }
+        return;
       }
-    }
-
-    document.getElementById('toolbar').addEventListener('pointerdown', (e) => {
-      stylusGuard(e);
-    }, true);
-
-    document.addEventListener('touchstart', (e) => {
-      if (stylusOnlyMode) e.preventDefault();
-    }, { passive: false });
-
-    document.addEventListener('touchmove', (e) => {
-      if (stylusOnlyMode) e.preventDefault();
-    }, { passive: false });
-
-    stage.on('pointerdown', (e) => {
-      if (stylusGuard(e.evt) === false) return;
 
       isDrawing = true;
       const pos = stage.getPointerPosition();
@@ -142,7 +235,6 @@
         points: [pos.x, pos.y],
         lineCap: 'round',
         lineJoin: 'round',
-        draggable: false,
         ...(shadowEnabled && {
           shadowColor: currentColor,
           shadowBlur: 5,
@@ -152,20 +244,31 @@
       });
 
       drawLayer.add(currentLine);
+      lines.push(currentLine);
     });
 
-    stage.on('pointermove', (e) => {
-      if (stylusGuard(e.evt) === false || !isDrawing || !currentLine) return;
+    stage.on('mousemove touchmove', (e) => {
+      if (isFullscreen && e.evt.pointerType && e.evt.pointerType !== 'pen') return;
+      if (!isDrawing || !currentLine) return;
+
       const pos = stage.getPointerPosition();
       const newPoints = currentLine.points().concat([pos.x, pos.y]);
       currentLine.points(newPoints);
       drawLayer.batchDraw();
     });
 
-    stage.on('pointerup', (e) => {
-      if (stylusGuard(e.evt) === false) return;
+    stage.on('mouseup touchend', (e) => {
+      if (isFullscreen && e.evt.pointerType && e.evt.pointerType !== 'pen') return;
       isDrawing = false;
       currentLine = null;
+    });
+
+    document.getElementById('undoBtn').addEventListener('click', () => {
+      if (lines.length > 0) {
+        const lastLine = lines.pop();
+        lastLine.destroy();
+        drawLayer.draw();
+      }
     });
 
     document.getElementById('imageLoader').addEventListener('change', function (e) {
@@ -180,10 +283,19 @@
           const scaledWidth = containerWidth;
           const scaledHeight = img.height * scale;
 
+          originalImageObj = img;
+          imageNaturalWidth = img.width;
+          imageNaturalHeight = img.height;
+          imageDisplayWidth = scaledWidth;
+          imageDisplayHeight = scaledHeight;
+          insertedSpaces.length = 0;
+
           stage.width(scaledWidth);
           stage.height(scaledHeight);
 
           imageLayer.destroyChildren();
+          drawLayer.destroyChildren();
+          lines.length = 0;
 
           const konvaImage = new Konva.Image({
             image: img,
@@ -191,7 +303,6 @@
             y: 0,
             width: scaledWidth,
             height: scaledHeight,
-            draggable: false
           });
 
           imageLayer.add(konvaImage);
@@ -205,13 +316,14 @@
 
     function setActiveButton(buttons, selectedButton) {
       buttons.forEach(btn => btn.classList.remove('active'));
-      selectedButton.classList.add('active');
+      if (selectedButton) {
+        selectedButton.classList.add('active');
+      }
     }
 
     const colorButtons = Array.from(document.querySelectorAll('.tool-button.color'));
     colorButtons.forEach(btn => {
-      btn.addEventListener('pointerdown', (e) => {
-        if (stylusGuard(e) === false) return;
+      btn.addEventListener('click', () => {
         currentColor = btn.dataset.color;
         setActiveButton(colorButtons, btn);
       });
@@ -220,8 +332,7 @@
 
     const thicknessButtons = Array.from(document.querySelectorAll('.tool-button.thickness'));
     thicknessButtons.forEach(btn => {
-      btn.addEventListener('pointerdown', (e) => {
-        if (stylusGuard(e) === false) return;
+      btn.addEventListener('click', () => {
         currentThickness = parseInt(btn.dataset.size);
         setActiveButton(thicknessButtons, btn);
       });
@@ -229,33 +340,44 @@
     setActiveButton(thicknessButtons, thicknessButtons[0]);
 
     document.getElementById('shadowToggle').addEventListener('change', function (e) {
-      if (stylusGuard(e) === false) {
-        e.target.checked = !e.target.checked;
-        return;
-      }
       shadowEnabled = e.target.checked;
     });
 
-    document.getElementById('fullscreenBtn').addEventListener('click', () => {
-      const elem = document.documentElement;
-      if (!document.fullscreenElement) {
-        if (elem.requestFullscreen) {
-          elem.requestFullscreen();
-        } else if (elem.webkitRequestFullscreen) {
-          elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) {
-          elem.msRequestFullscreen();
-        }
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-          document.msExitFullscreen();
-        }
+    const enterFullscreenBtn = document.getElementById('enterFullscreen');
+    const exitFullscreenBtn = document.getElementById('exitFullscreen');
+
+    enterFullscreenBtn.addEventListener('click', () => {
+      isFullscreen = true;
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen();
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
       }
     });
+
+    exitFullscreenBtn.addEventListener('click', () => {
+      isFullscreen = false;
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    });
+
+    document.addEventListener('touchmove', function (e) {
+      if (isFullscreen) {
+        e.preventDefault();
+      }
+    }, { passive: false });
   </script>
 </body>
 </html>
