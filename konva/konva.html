@@ -2,217 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Scrollable Image Annotator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Annotator</title>
+  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden;
-      touch-action: none;
       height: 100%;
+      /* Removed overflow: hidden to allow vertical scroll */
     }
-
-    #controls {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 10px;
-      border-radius: 5px;
-    }
-
-    #scroll-controls {
-      position: fixed;
-      right: 10px;
-      bottom: 20px;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    #scroll-controls button {
-      font-size: 24px;
-      padding: 10px;
-    }
-
-    #scrollArea {
+    #container {
       position: relative;
-      width: 100vw;
-      height: 100vh;
-      overflow-y: hidden;
-      scroll-behavior: smooth;
+      width: 100%;
     }
-
-    #image-container {
-      position: relative;
-      width: 100vw;
-    }
-
-    #img {
-      width: 100vw;
+    #imageLayer {
+      width: 100%;
       height: auto;
-      display: none;
+      display: block;
     }
-
-    #canvas {
+    #stageContainer {
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 10;
-      display: none;
-      pointer-events: auto;
+      pointer-events: none;
     }
-
-    #fullscreen-message {
+    #fileInput {
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 20px 30px;
-      border-radius: 10px;
-      z-index: 2000;
-      display: none;
-      font-size: 18px;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
     }
   </style>
 </head>
 <body>
-  <div id="controls">
-    <input type="file" id="fileInput" accept="image/*" />
-    <button id="fullscreen-btn">Go Fullscreen</button>
-  </div>
-
-  <div id="scroll-controls">
-    <button id="scroll-up">▲</button>
-    <button id="scroll-down">▼</button>
-  </div>
-
-  <div id="scrollArea">
-    <div id="image-container">
-      <img id="img" />
-      <canvas id="canvas"></canvas>
-    </div>
+  <input type="file" id="fileInput" accept="image/*" />
+  <div id="container">
+    <img id="imageLayer" />
+    <div id="stageContainer"></div>
   </div>
 
   <script>
     const fileInput = document.getElementById('fileInput');
-    const img = document.getElementById('img');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const imageContainer = document.getElementById('image-container');
-    const scrollArea = document.getElementById('scrollArea');
-    const fullscreenBtn = document.getElementById('fullscreen-btn');
-    const fullscreenMessage = document.getElementById('fullscreen-message');
+    const imgElement = document.getElementById('imageLayer');
+    const stageContainer = document.getElementById('stageContainer');
+    const container = document.getElementById('container');
 
-    let drawing = false;
+    let stage, layer, isDrawing = false, currentLine;
 
-    function scrollByAmount(amount) {
-      scrollArea.scrollBy({
-        top: amount,
-        behavior: 'smooth'
-      });
-    }
-
-    function isFullscreen() {
-      return document.fullscreenElement != null;
-    }
-
-    fileInput.addEventListener('change', (e) => {
+    fileInput.addEventListener('change', function (e) {
       const file = e.target.files[0];
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          img.src = reader.result;
-          img.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-      }
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        imgElement.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
     });
 
-    img.onload = () => {
-      canvas.width = img.clientWidth;
-      canvas.height = img.clientHeight;
-      canvas.style.width = img.clientWidth + 'px';
-      canvas.style.height = img.clientHeight + 'px';
-      canvas.style.display = 'block';
-      imageContainer.style.height = img.clientHeight + 'px';
+    imgElement.onload = function () {
+      const width = window.innerWidth;
+      const aspectRatio = imgElement.naturalHeight / imgElement.naturalWidth;
+      const height = width * aspectRatio;
+
+      imgElement.style.width = width + 'px';
+      imgElement.style.height = height + 'px';
+
+      stageContainer.style.width = width + 'px';
+      stageContainer.style.height = height + 'px';
+      stageContainer.style.pointerEvents = 'auto';
+
+      stageContainer.innerHTML = ''; // Clear previous canvas
+      stage = new Konva.Stage({
+        container: 'stageContainer',
+        width: width,
+        height: height
+      });
+
+      layer = new Konva.Layer();
+      stage.add(layer);
+
+      stage.on('mousedown touchstart', function (e) {
+        isDrawing = true;
+        const pos = stage.getPointerPosition();
+        currentLine = new Konva.Line({
+          stroke: 'orange',
+          strokeWidth: 4,
+          globalCompositeOperation: 'source-over',
+          points: [pos.x, pos.y],
+          lineCap: 'round',
+          lineJoin: 'round',
+          shadowColor: 'orange',
+          shadowBlur: 6,
+          shadowOffset: { x: 2, y: 2 },
+          shadowOpacity: 0.6
+        });
+        layer.add(currentLine);
+      });
+
+      stage.on('mousemove touchmove', function (e) {
+        if (!isDrawing) return;
+        const pos = stage.getPointerPosition();
+        const newPoints = currentLine.points().concat([pos.x, pos.y]);
+        currentLine.points(newPoints);
+        layer.batchDraw();
+      });
+
+      stage.on('mouseup touchend', function () {
+        isDrawing = false;
+      });
     };
-
-    fullscreenBtn.addEventListener('click', () => {
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
-      }
-    });
-
-    canvas.addEventListener('pointerdown', (e) => {
-      if (isFullscreen() && e.pointerType !== 'pen') return;
-      drawing = true;
-      const rect = canvas.getBoundingClientRect();
-      ctx.beginPath();
-      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-    });
-
-    canvas.addEventListener('pointermove', (e) => {
-      if (!drawing) return;
-      if (isFullscreen() && e.pointerType !== 'pen') return;
-      const rect = canvas.getBoundingClientRect();
-      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-      ctx.stroke();
-    });
-
-    canvas.addEventListener('pointerup', () => drawing = false);
-    canvas.addEventListener('pointerleave', () => drawing = false);
-
-    window.addEventListener('resize', () => {
-      if (img.src) {
-        canvas.width = img.clientWidth;
-        canvas.height = img.clientHeight;
-        canvas.style.width = img.clientWidth + 'px';
-        canvas.style.height = img.clientHeight + 'px';
-        imageContainer.style.height = img.clientHeight + 'px';
-      }
-    });
-
-    document.addEventListener('fullscreenchange', () => {
-      fullscreenMessage.style.display = isFullscreen() ? 'block' : 'none';
-    });
-
-    let scrollInterval;
-
-    function startScroll(amount) {
-      scrollInterval = setInterval(() => {
-        scrollByAmount(amount);
-      }, 50);
-    }
-
-    function stopScroll() {
-      clearInterval(scrollInterval);
-    }
-
-    const scrollUpBtn = document.getElementById('scroll-up');
-    scrollUpBtn.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'pen') {
-        startScroll(-10);
-      }
-    });
-    scrollUpBtn.addEventListener('pointerup', stopScroll);
-    scrollUpBtn.addEventListener('pointerleave', stopScroll);
-    scrollUpBtn.addEventListener('pointercancel', stopScroll);
-
-    const scrollDownBtn = document.getElementById('scroll-down');
-    scrollDownBtn.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'pen') {
-        startScroll(10);
-      }
-    });
-    scrollDownBtn.addEventListener('pointerup', stopScroll);
-    scrollDownBtn.addEventListener('pointerleave', stopScroll);
-    scrollDownBtn.addEventListener('pointercancel', stopScroll);
   </script>
 </body>
 </html>
