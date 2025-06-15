@@ -11,47 +11,29 @@
       margin: 0;
       overflow: hidden;
     }
-
     #toolbar {
       margin-bottom: 10px;
       padding: 10px;
       background: #f0f0f0;
       border-bottom: 1px solid #ccc;
     }
-
-    #fullscreenWrapper {
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    #scrollContainer {
-      width: 100%;
-      height: 100%;
-      overflow-y: auto;
-      position: relative;
-    }
-
     #container {
       border: 1px solid #ccc;
       width: 100%;
       max-width: 100%;
+      overflow: hidden;
     }
-
     canvas {
       cursor: crosshair;
-      touch-action: none;
+      touch-action: none; /* Prevent browser gestures */
     }
-
     .tool-group {
       display: inline-block;
       margin-right: 20px;
     }
-
     .tool-group label {
       margin-right: 5px;
     }
-
     .tool-button {
       padding: 5px 10px;
       margin-right: 5px;
@@ -59,28 +41,8 @@
       background-color: #f5f5f5;
       cursor: pointer;
     }
-
     .tool-button.active {
       border: 2px solid #000;
-    }
-
-    /* Thicker, stylized scrollbar */
-    #scrollContainer::-webkit-scrollbar {
-      width: 16px;
-    }
-
-    #scrollContainer::-webkit-scrollbar-track {
-      background: #eee;
-    }
-
-    #scrollContainer::-webkit-scrollbar-thumb {
-      background: #999;
-      border-radius: 8px;
-    }
-
-    #scrollContainer {
-      scrollbar-width: thin;
-      scrollbar-color: #999 #eee;
     }
   </style>
 </head>
@@ -112,18 +74,14 @@
     <button id="fullscreenBtn" class="tool-button">Fullscreen</button>
   </div>
 
-  <div id="fullscreenWrapper" style="display: none;">
-    <div id="scrollContainer">
-      <div id="container"></div>
-    </div>
-  </div>
+  <div id="container"></div>
 
   <script>
     const stage = new Konva.Stage({
       container: 'container',
       width: window.innerWidth,
       height: 600,
-      draggable: false
+      draggable: false  // Prevent moving the canvas
     });
 
     const imageLayer = new Konva.Layer();
@@ -137,14 +95,12 @@
     let currentColor = 'green';
     let currentThickness = 2;
     let shadowEnabled = false;
+
+    // Stylus-only mode when in fullscreen
     let stylusOnlyMode = false;
 
     document.addEventListener('fullscreenchange', () => {
       stylusOnlyMode = !!document.fullscreenElement;
-
-      // Toggle wrapper view
-      document.getElementById('fullscreenWrapper').style.display = stylusOnlyMode ? 'block' : 'none';
-      document.getElementById('container').style.height = stylusOnlyMode ? '2000px' : 'auto';
     });
 
     function isStylusEvent(evt) {
@@ -159,7 +115,7 @@
       }
     }
 
-    // Prevent finger scroll
+    // Prevent finger scroll/gesture in fullscreen
     document.addEventListener('touchstart', (e) => {
       if (stylusOnlyMode) e.preventDefault();
     }, { passive: false });
@@ -168,17 +124,12 @@
       if (stylusOnlyMode) e.preventDefault();
     }, { passive: false });
 
+    // Block finger interaction on toolbar
     document.getElementById('toolbar').addEventListener('pointerdown', (e) => {
       stylusGuard(e);
     }, true);
 
-    document.getElementById('scrollContainer').addEventListener('pointerdown', (e) => {
-      if (stylusOnlyMode && !isStylusEvent(e)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-    }, true);
-
+    // Drawing handlers
     stage.on('pointerdown', (e) => {
       if (stylusGuard(e.evt) === false) return;
 
@@ -219,6 +170,7 @@
       currentLine = null;
     });
 
+    // Image loader
     document.getElementById('imageLoader').addEventListener('change', function (e) {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -254,6 +206,7 @@
       reader.readAsDataURL(file);
     });
 
+    // Tool selectors
     function setActiveButton(buttons, selectedButton) {
       buttons.forEach(btn => btn.classList.remove('active'));
       selectedButton.classList.add('active');
@@ -279,20 +232,34 @@
     });
     setActiveButton(thicknessButtons, thicknessButtons[0]);
 
+    // Shadow toggle
     document.getElementById('shadowToggle').addEventListener('change', function (e) {
       if (stylusGuard(e) === false) {
-        e.target.checked = !e.target.checked;
+        e.target.checked = !e.target.checked; // revert if blocked
         return;
       }
       shadowEnabled = e.target.checked;
     });
 
+    // Fullscreen button
     document.getElementById('fullscreenBtn').addEventListener('click', () => {
-      const wrapper = document.getElementById('fullscreenWrapper');
+      const elem = document.documentElement;
       if (!document.fullscreenElement) {
-        wrapper.requestFullscreen();
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        }
       } else {
-        document.exitFullscreen();
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
       }
     });
   </script>
