@@ -8,7 +8,9 @@
     html, body {
       margin: 0;
       padding: 0;
-      overflow-x: hidden;
+      overflow: hidden; /* Disable all native scrolling */
+      touch-action: none; /* Block gestures */
+      height: 100%;
     }
 
     #controls {
@@ -19,6 +21,29 @@
       background: rgba(255, 255, 255, 0.9);
       padding: 10px;
       border-radius: 5px;
+    }
+
+    #scroll-controls {
+      position: fixed;
+      right: 10px;
+      bottom: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #scroll-controls button {
+      font-size: 24px;
+      padding: 10px;
+    }
+
+    #scrollArea {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow-y: hidden; /* Only scroll via buttons */
+      scroll-behavior: smooth;
     }
 
     #image-container {
@@ -38,7 +63,7 @@
       left: 0;
       z-index: 10;
       display: none;
-      pointer-events: none; /* Let mouse events pass through initially */
+      pointer-events: none;
     }
   </style>
 </head>
@@ -48,9 +73,16 @@
     <button id="fullscreen-btn">Go Fullscreen</button>
   </div>
 
-  <div id="image-container">
-    <img id="img">
-    <canvas id="canvas"></canvas>
+  <div id="scroll-controls">
+    <button onclick="scrollByAmount(-100)">▲</button>
+    <button onclick="scrollByAmount(100)">▼</button>
+  </div>
+
+  <div id="scrollArea">
+    <div id="image-container">
+      <img id="img">
+      <canvas id="canvas"></canvas>
+    </div>
   </div>
 
   <script>
@@ -58,10 +90,18 @@
     const img = document.getElementById('img');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const container = document.getElementById('image-container');
+    const imageContainer = document.getElementById('image-container');
+    const scrollArea = document.getElementById('scrollArea');
     const fullscreenBtn = document.getElementById('fullscreen-btn');
 
     let drawing = false;
+
+    function scrollByAmount(amount) {
+      scrollArea.scrollBy({
+        top: amount,
+        behavior: 'smooth'
+      });
+    }
 
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -81,7 +121,10 @@
       canvas.style.width = img.clientWidth + 'px';
       canvas.style.height = img.clientHeight + 'px';
       canvas.style.display = 'block';
-      canvas.style.pointerEvents = 'auto'; // Enable drawing after load
+      canvas.style.pointerEvents = 'auto';
+
+      // Also adjust container height to allow scrolling
+      imageContainer.style.height = img.clientHeight + 'px';
     };
 
     fullscreenBtn.addEventListener('click', () => {
@@ -90,7 +133,6 @@
       }
     });
 
-    // Drawing
     canvas.addEventListener('mousedown', (e) => {
       drawing = true;
       const rect = canvas.getBoundingClientRect();
@@ -106,22 +148,16 @@
       }
     });
 
-    canvas.addEventListener('mouseup', () => {
-      drawing = false;
-    });
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mouseleave', () => drawing = false);
 
-    canvas.addEventListener('mouseleave', () => {
-      drawing = false;
-    });
-
-    // Handle resize
     window.addEventListener('resize', () => {
       if (img.src) {
-        // Resize canvas to match new image size
         canvas.width = img.clientWidth;
         canvas.height = img.clientHeight;
         canvas.style.width = img.clientWidth + 'px';
         canvas.style.height = img.clientHeight + 'px';
+        imageContainer.style.height = img.clientHeight + 'px';
       }
     });
   </script>
