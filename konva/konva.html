@@ -11,39 +11,48 @@
       padding: 10px;
       margin: 0;
     }
+
     #toolbar {
       margin-bottom: 10px;
       flex-wrap: wrap;
     }
+
     #scrollWrapper {
       width: 100%;
       max-width: 100%;
-      overflow-y: hidden; /* enabled in fullscreen */
       height: 600px;
+      overflow-y: hidden; /* default, enabled in fullscreen */
       position: relative;
     }
+
     #container {
       width: 100%;
       overflow: hidden;
     }
+
     canvas {
       cursor: crosshair;
     }
+
     :fullscreen #scrollWrapper {
       overflow-y: auto;
       height: 100vh;
     }
+
     :fullscreen canvas {
       touch-action: none;
     }
+
     .tool-group {
       display: inline-block;
       margin-right: 20px;
       margin-top: 5px;
     }
+
     .tool-group label {
       margin-right: 5px;
     }
+
     .tool-button {
       padding: 5px 10px;
       margin-right: 5px;
@@ -51,6 +60,7 @@
       background-color: #f5f5f5;
       cursor: pointer;
     }
+
     .tool-button.active {
       border: 2px solid #000;
     }
@@ -159,11 +169,11 @@
           const y1 = firstClickY;
           const y2 = clickY;
           const delta = y2 - y1;
-          insertedSpaces.push({ y: y1, delta: delta });
+          insertedSpaces.push({ y: y1, delta });
 
           drawLayer.getChildren().forEach(line => {
-            const oldPoints = line.points();
             const newPoints = [];
+            const oldPoints = line.points();
             for (let i = 0; i < oldPoints.length; i += 2) {
               const x = oldPoints[i];
               let y = oldPoints[i + 1];
@@ -243,7 +253,6 @@
 
       isDrawing = true;
       const pos = stage.getPointerPosition();
-
       currentLine = new Konva.Line({
         stroke: currentColor,
         strokeWidth: currentThickness,
