@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Image Viewer</title>
+  <title>Tablet Image Viewer</title>
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden; /* Disable normal scrolling */
+      overflow: hidden; /* Disable browser scroll */
       height: 100%;
       background: #000;
-      color: white;
-      font-family: sans-serif;
+      touch-action: none; /* Prevent default touch behavior */
+      user-select: none;  /* Prevent text selection */
     }
 
     #image-container {
@@ -20,7 +20,6 @@
       height: 100vh;
       overflow-y: scroll;
       scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
       position: relative;
     }
 
@@ -39,6 +38,7 @@
       flex-direction: column;
       gap: 10px;
       z-index: 999;
+      user-select: none;
     }
 
     button {
@@ -49,6 +49,12 @@
       border: none;
       border-radius: 10px;
       cursor: pointer;
+      outline: none;
+      user-select: none;
+    }
+
+    button:focus {
+      outline: none;
     }
 
     input[type="file"] {
@@ -101,17 +107,31 @@
       clearInterval(scrollInterval);
     }
 
-    document.getElementById('scrollUp').addEventListener('mousedown', () => startScrolling(-1));
-    document.getElementById('scrollDown').addEventListener('mousedown', () => startScrolling(1));
-    document.getElementById('scrollUp').addEventListener('touchstart', () => startScrolling(-1));
-    document.getElementById('scrollDown').addEventListener('touchstart', () => startScrolling(1));
+    const upBtn = document.getElementById('scrollUp');
+    const downBtn = document.getElementById('scrollDown');
 
-    document.getElementById('scrollUp').addEventListener('mouseup', stopScrolling);
-    document.getElementById('scrollDown').addEventListener('mouseup', stopScrolling);
-    document.getElementById('scrollUp').addEventListener('mouseleave', stopScrolling);
-    document.getElementById('scrollDown').addEventListener('mouseleave', stopScrolling);
-    document.getElementById('scrollUp').addEventListener('touchend', stopScrolling);
-    document.getElementById('scrollDown').addEventListener('touchend', stopScrolling);
+    function attachScrollEvents(button, direction) {
+      button.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startScrolling(direction);
+      });
+      button.addEventListener('mouseup', stopScrolling);
+      button.addEventListener('mouseleave', stopScrolling);
+
+      button.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startScrolling(direction);
+      }, { passive: false });
+      button.addEventListener('touchend', stopScrolling);
+    }
+
+    attachScrollEvents(upBtn, -1);
+    attachScrollEvents(downBtn, 1);
+
+    // Prevent touch scrolling
+    document.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    }, { passive: false });
   </script>
 </body>
 </html>
