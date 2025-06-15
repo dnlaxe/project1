@@ -4,24 +4,27 @@
   <meta charset="UTF-8">
   <title>Image Annotator</title>
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
       overflow: hidden;
+      height: 100%;
     }
 
     #container {
       position: relative;
-      width: 100%;
-      height: 100%;
-      background: #000;
+      width: 100vw;
+      height: 100vh;
+      background-color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
     }
 
     #img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
+      width: 100vw;
+      height: auto;
       display: none;
     }
 
@@ -38,13 +41,9 @@
       top: 10px;
       left: 10px;
       z-index: 20;
-      background: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.9);
       padding: 10px;
       border-radius: 5px;
-    }
-
-    #fullscreen-btn {
-      margin-top: 5px;
     }
   </style>
 </head>
@@ -74,16 +73,24 @@
         const reader = new FileReader();
         reader.onload = () => {
           img.src = reader.result;
-          img.onload = () => {
-            canvas.width = img.clientWidth;
-            canvas.height = img.clientHeight;
-            canvas.style.display = 'block';
-            img.style.display = 'block';
-          };
+          img.style.display = 'block';
         };
         reader.readAsDataURL(file);
       }
     });
+
+    img.onload = () => {
+      // Wait for image to render to get accurate size
+      setTimeout(() => {
+        canvas.width = img.clientWidth;
+        canvas.height = img.clientHeight;
+        canvas.style.width = img.clientWidth + 'px';
+        canvas.style.height = img.clientHeight + 'px';
+        canvas.style.display = 'block';
+        canvas.style.top = img.offsetTop + 'px';
+        canvas.style.left = img.offsetLeft + 'px';
+      }, 50);
+    };
 
     fullscreenBtn.addEventListener('click', () => {
       if (container.requestFullscreen) {
@@ -95,7 +102,7 @@
       }
     });
 
-    // Drawing handlers
+    // Drawing on canvas
     canvas.addEventListener('mousedown', (e) => {
       drawing = true;
       ctx.beginPath();
@@ -117,11 +124,10 @@
       drawing = false;
     });
 
-    // Adjust canvas size when resizing window
+    // Resize canvas on window resize
     window.addEventListener('resize', () => {
-      if (img.src) {
-        canvas.width = img.clientWidth;
-        canvas.height = img.clientHeight;
+      if (img.style.display === 'block') {
+        img.onload();
       }
     });
   </script>
