@@ -9,6 +9,7 @@
     body {
       font-family: sans-serif;
       margin: 0;
+      overflow: hidden;
     }
     #toolbar {
       margin-bottom: 10px;
@@ -24,6 +25,7 @@
     }
     canvas {
       cursor: crosshair;
+      touch-action: none; /* Prevent browser gestures */
     }
     .tool-group {
       display: inline-block;
@@ -79,6 +81,7 @@
       container: 'container',
       width: window.innerWidth,
       height: 600,
+      draggable: false  // Prevent moving the canvas
     });
 
     const imageLayer = new Konva.Layer();
@@ -93,7 +96,7 @@
     let currentThickness = 2;
     let shadowEnabled = false;
 
-    // ADDED: Stylus-only fullscreen mode logic
+    // Stylus-only mode when in fullscreen
     let stylusOnlyMode = false;
 
     document.addEventListener('fullscreenchange', () => {
@@ -105,27 +108,29 @@
     }
 
     function stylusGuard(evt) {
-      if (stylusOnlyMode && !isStylusEvent(evt)) {
+      if (stylusOnlyMode && evt.pointerType !== 'pen') {
         evt.preventDefault();
-        evt.stopPropagation();
+        evt.stopImmediatePropagation();
         return false;
       }
     }
 
-    // ADDED: Block finger scroll in fullscreen
-    document.addEventListener('touchmove', (e) => {
-      if (stylusOnlyMode) {
-        e.preventDefault();
-      }
+    // Prevent finger scroll/gesture in fullscreen
+    document.addEventListener('touchstart', (e) => {
+      if (stylusOnlyMode) e.preventDefault();
     }, { passive: false });
 
-    // ADDED: Block finger input on toolbar in fullscreen
+    document.addEventListener('touchmove', (e) => {
+      if (stylusOnlyMode) e.preventDefault();
+    }, { passive: false });
+
+    // Block finger interaction on toolbar
     document.getElementById('toolbar').addEventListener('pointerdown', (e) => {
       stylusGuard(e);
     }, true);
 
-    // Handle drawing
-    stage.on('mousedown touchstart pointerdown', (e) => {
+    // Drawing handlers
+    stage.on('pointerdown', (e) => {
       if (stylusGuard(e.evt) === false) return;
 
       isDrawing = true;
@@ -138,6 +143,7 @@
         points: [pos.x, pos.y],
         lineCap: 'round',
         lineJoin: 'round',
+        draggable: false,
         ...(shadowEnabled && {
           shadowColor: currentColor,
           shadowBlur: 5,
@@ -149,7 +155,7 @@
       drawLayer.add(currentLine);
     });
 
-    stage.on('mousemove touchmove pointermove', (e) => {
+    stage.on('pointermove', (e) => {
       if (stylusGuard(e.evt) === false || !isDrawing || !currentLine) return;
 
       const pos = stage.getPointerPosition();
@@ -158,13 +164,13 @@
       drawLayer.batchDraw();
     });
 
-    stage.on('mouseup touchend pointerup', (e) => {
+    stage.on('pointerup', (e) => {
       if (stylusGuard(e.evt) === false) return;
       isDrawing = false;
       currentLine = null;
     });
 
-    // Load image and scale to screen width
+    // Image loader
     document.getElementById('imageLoader').addEventListener('change', function (e) {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -188,6 +194,7 @@
             y: 0,
             width: scaledWidth,
             height: scaledHeight,
+            draggable: false
           });
 
           imageLayer.add(konvaImage);
@@ -207,7 +214,7 @@
 
     const colorButtons = Array.from(document.querySelectorAll('.tool-button.color'));
     colorButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('pointerdown', (e) => {
         if (stylusGuard(e) === false) return;
         currentColor = btn.dataset.color;
         setActiveButton(colorButtons, btn);
@@ -217,7 +224,7 @@
 
     const thicknessButtons = Array.from(document.querySelectorAll('.tool-button.thickness'));
     thicknessButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('pointerdown', (e) => {
         if (stylusGuard(e) === false) return;
         currentThickness = parseInt(btn.dataset.size);
         setActiveButton(thicknessButtons, btn);
@@ -228,29 +235,29 @@
     // Shadow toggle
     document.getElementById('shadowToggle').addEventListener('change', function (e) {
       if (stylusGuard(e) === false) {
-        e.target.checked = !e.target.checked; // Revert checkbox
+        e.target.checked = !e.target.checked; // revert if blocked
         return;
       }
       shadowEnabled = e.target.checked;
     });
 
-    // Fullscreen toggle
-    document.getElementById('fullscreenBtn').addEventListener('click', (e) => {
+    // Fullscreen button
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
       const elem = document.documentElement;
       if (!document.fullscreenElement) {
         if (elem.requestFullscreen) {
           elem.requestFullscreen();
-        } else if (elem.webkitRequestFullscreen) { // Safari
+        } else if (elem.webkitRequestFullscreen) {
           elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) { // IE11
+        } else if (elem.msRequestFullscreen) {
           elem.msRequestFullscreen();
         }
       } else {
         if (document.exitFullscreen) {
           document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) { // Safari
+        } else if (document.webkitExitFullscreen) {
           document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) { // IE11
+        } else if (document.msExitFullscreen) {
           document.msExitFullscreen();
         }
       }
