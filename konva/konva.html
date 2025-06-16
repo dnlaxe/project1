@@ -3,135 +3,229 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tablet Image Viewer</title>
+  <title>Tablet Image Annotator</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden; /* Disable browser scroll */
-      height: 100%;
-      background: #000;
-      touch-action: none; /* Prevent default touch behavior */
-      user-select: none;  /* Prevent text selection */
-    }
-
-    #image-container {
-      width: 100vw;
+      overflow: hidden;
       height: 100vh;
-      overflow-y: scroll;
-      scroll-behavior: smooth;
-      position: relative;
+      font-family: sans-serif;
     }
 
-    img {
+    .toolbar {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toolbar input[type="file"],
+    .toolbar button {
+      font-size: 16px;
+    }
+
+    .color-buttons button,
+    .thickness-buttons button {
+      padding: 5px 10px;
+      margin-right: 5px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .scroll-button {
+      position: fixed;
+      font-size: 20px;
+      padding: 10px 15px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #scrollUp {
+      top: 10px;
+      left: 10px;
+    }
+
+    #scrollDown {
+      bottom: 10px;
+      left: 10px;
+    }
+
+    #scroll-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      will-change: transform;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    #image {
       width: 100%;
       height: auto;
       display: block;
     }
 
-    .controls {
-      position: fixed;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 999;
-      user-select: none;
+    #konva-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
     }
 
-    button {
-      padding: 20px;
-      font-size: 18px;
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      outline: none;
-      user-select: none;
-    }
-
-    button:focus {
-      outline: none;
-    }
-
-    input[type="file"] {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      z-index: 1000;
+    .active {
+      background-color: #ddd;
     }
   </style>
 </head>
 <body>
-  <input type="file" accept="image/*" id="fileInput" />
 
-  <div id="image-container">
-    <img id="displayImage" src="" alt="Selected Image" style="display: none;" />
+  <!-- Scroll Buttons -->
+  <button id="scrollUp" class="scroll-button">⬆️</button>
+  <button id="scrollDown" class="scroll-button">⬇️</button>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <input type="file" id="fileInput" accept="image/*" />
+
+    <div class="color-buttons">
+      <label>Color:</label>
+      <button data-color="red" class="color-option">Red</button>
+      <button data-color="green" class="color-option">Green</button>
+      <button data-color="blue" class="color-option">Blue</button>
+    </div>
+
+    <div class="thickness-buttons">
+      <label>Thickness:</label>
+      <button data-thickness="2" class="thickness-option">Thin</button>
+      <button data-thickness="5" class="thickness-option">Medium</button>
+      <button data-thickness="10" class="thickness-option">Thick</button>
+    </div>
   </div>
 
-  <div class="controls">
-    <button id="scrollUp">▲</button>
-    <button id="scrollDown">▼</button>
+  <div id="scroll-container">
+    <div id="content">
+      <img id="image" src="" alt="Chosen Image" />
+      <div id="konva-container"></div>
+    </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
   <script>
     const fileInput = document.getElementById('fileInput');
-    const displayImage = document.getElementById('displayImage');
-    const imageContainer = document.getElementById('image-container');
+    const imgElement = document.getElementById('image');
+    const konvaContainer = document.getElementById('konva-container');
+    const content = document.getElementById('content');
+    const scrollStep = 200;
+    let scrollOffset = 0;
 
-    fileInput.addEventListener('change', (e) => {
+    let currentColor = "red";
+    let currentThickness = 2;
+
+    // Scroll behavior
+    function scrollContent(delta) {
+      const maxScroll = content.scrollHeight - window.innerHeight;
+      scrollOffset = Math.max(0, Math.min(scrollOffset + delta, maxScroll));
+      content.style.transform = `translateY(-${scrollOffset}px)`;
+    }
+
+    document.getElementById('scrollUp').addEventListener('click', () => scrollContent(-scrollStep));
+    document.getElementById('scrollDown').addEventListener('click', () => scrollContent(scrollStep));
+
+    // Color selection
+    document.querySelectorAll('.color-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentColor = btn.getAttribute('data-color');
+        document.querySelectorAll('.color-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Thickness selection
+    document.querySelectorAll('.thickness-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentThickness = parseInt(btn.getAttribute('data-thickness'));
+        document.querySelectorAll('.thickness-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    let stage, layer, isDrawing = false, lastLine;
+
+    fileInput.addEventListener('change', function (e) {
       const file = e.target.files[0];
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = function (evt) {
-          displayImage.src = evt.target.result;
-          displayImage.style.display = 'block';
+        reader.onload = function (event) {
+          imgElement.src = event.target.result;
         };
         reader.readAsDataURL(file);
       }
     });
 
-    const scrollSpeed = 500;
-    let scrollInterval;
+    imgElement.onload = function () {
+      konvaContainer.innerHTML = '';
+      konvaContainer.style.pointerEvents = 'auto';
 
-    function startScrolling(direction) {
-      scrollInterval = setInterval(() => {
-        imageContainer.scrollTop += direction * scrollSpeed;
-      }, 10);
-    }
+      const width = imgElement.clientWidth;
+      const height = imgElement.clientHeight;
 
-    function stopScrolling() {
-      clearInterval(scrollInterval);
-    }
+      konvaContainer.style.width = width + 'px';
+      konvaContainer.style.height = height + 'px';
 
-    const upBtn = document.getElementById('scrollUp');
-    const downBtn = document.getElementById('scrollDown');
-
-    function attachScrollEvents(button, direction) {
-      button.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        startScrolling(direction);
+      stage = new Konva.Stage({
+        container: 'konva-container',
+        width: width,
+        height: height
       });
-      button.addEventListener('mouseup', stopScrolling);
-      button.addEventListener('mouseleave', stopScrolling);
 
-      button.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        startScrolling(direction);
-      }, { passive: false });
-      button.addEventListener('touchend', stopScrolling);
-    }
+      layer = new Konva.Layer();
+      stage.add(layer);
 
-    attachScrollEvents(upBtn, -1);
-    attachScrollEvents(downBtn, 1);
+      stage.on('mousedown touchstart', function () {
+        isDrawing = true;
+        const pos = stage.getPointerPosition();
+        lastLine = new Konva.Line({
+          stroke: currentColor,
+          strokeWidth: currentThickness,
+          globalCompositeOperation: 'source-over',
+          points: [pos.x, pos.y],
+          lineCap: 'round',
+          lineJoin: 'round'
+        });
+        layer.add(lastLine);
+      });
 
-    // Prevent touch scrolling
-    document.addEventListener('touchmove', function(e) {
-      e.preventDefault();
-    }, { passive: false });
+      stage.on('mouseup touchend', function () {
+        isDrawing = false;
+      });
+
+      stage.on('mousemove touchmove', function () {
+        if (!isDrawing) return;
+        const pos = stage.getPointerPosition();
+        const newPoints = lastLine.points().concat([pos.x, pos.y]);
+        lastLine.points(newPoints);
+        layer.batchDraw();
+      });
+    };
   </script>
 </body>
 </html>

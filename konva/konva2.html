@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tablet Image Viewer</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Disable browser scroll */
+      height: 100%;
+      background: #000;
+      touch-action: none; /* Prevent default touch behavior */
+      user-select: none;  /* Prevent text selection */
+    }
+
+    #image-container {
+      width: 100vw;
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-behavior: smooth;
+      position: relative;
+    }
+
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .controls {
+      position: fixed;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 999;
+      user-select: none;
+    }
+
+    button {
+      padding: 20px;
+      font-size: 18px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      outline: none;
+      user-select: none;
+    }
+
+    button:focus {
+      outline: none;
+    }
+
+    input[type="file"] {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <input type="file" accept="image/*" id="fileInput" />
+
+  <div id="image-container">
+    <img id="displayImage" src="" alt="Selected Image" style="display: none;" />
+  </div>
+
+  <div class="controls">
+    <button id="scrollUp">▲</button>
+    <button id="scrollDown">▼</button>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const displayImage = document.getElementById('displayImage');
+    const imageContainer = document.getElementById('image-container');
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+          displayImage.src = evt.target.result;
+          displayImage.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    const scrollSpeed = 500;
+    let scrollInterval;
+
+    function startScrolling(direction) {
+      scrollInterval = setInterval(() => {
+        imageContainer.scrollTop += direction * scrollSpeed;
+      }, 10);
+    }
+
+    function stopScrolling() {
+      clearInterval(scrollInterval);
+    }
+
+    const upBtn = document.getElementById('scrollUp');
+    const downBtn = document.getElementById('scrollDown');
+
+    function attachScrollEvents(button, direction) {
+      button.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startScrolling(direction);
+      });
+      button.addEventListener('mouseup', stopScrolling);
+      button.addEventListener('mouseleave', stopScrolling);
+
+      button.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startScrolling(direction);
+      }, { passive: false });
+      button.addEventListener('touchend', stopScrolling);
+    }
+
+    attachScrollEvents(upBtn, -1);
+    attachScrollEvents(downBtn, 1);
+
+    // Prevent touch scrolling
+    document.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    }, { passive: false });
+  </script>
+</body>
+</html>
