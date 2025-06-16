@@ -3,22 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tablet Image Annotator</title>
+  <title>Tablet Image Annotator (Canvas Version)</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       overflow: hidden;
       height: 100vh;
-      font-family: sans-serif;
-      touch-action: none;
-    }
-
-    * {
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       touch-action: none;
+      font-family: sans-serif;
     }
 
     .toolbar {
@@ -44,8 +40,7 @@
       gap: 10px;
     }
 
-    .toolbar button,
-    .nav-buttons button {
+    button {
       font-size: 16px;
       padding: 6px 10px;
       border-radius: 6px;
@@ -53,28 +48,15 @@
       cursor: pointer;
     }
 
-    .colors, .thicknesses {
-      display: flex;
-      gap: 6px;
-    }
-
-    .colors button {
+    .colors button, .thicknesses button {
       width: 30px;
       height: 30px;
-      border-radius: 50%;
-      border: 2px solid #00000033;
+      border-radius: 6px;
     }
 
     .colors button.red { background: red; }
     .colors button.green { background: green; }
     .colors button.blue { background: blue; }
-
-    .thicknesses button {
-      width: 30px;
-      height: 30px;
-      border-radius: 6px;
-      background: #ddd;
-    }
 
     #scroll-container {
       position: relative;
@@ -94,20 +76,19 @@
 
     #image {
       width: 100%;
-      height: auto;
       display: block;
     }
 
-    #konva-container {
+    #draw-canvas {
       position: absolute;
       top: 0;
       left: 0;
+      z-index: 5;
       pointer-events: none;
     }
   </style>
 </head>
 <body>
-
   <div class="nav-buttons">
     <button id="scrollUp">⬆️</button>
     <button id="scrollDown">⬇️</button>
@@ -134,22 +115,27 @@
   <div id="scroll-container">
     <div id="content">
       <img id="image" src="" alt="Chosen Image" />
-      <div id="konva-container"></div>
+      <canvas id="draw-canvas"></canvas>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
   <script>
     const fileInput = document.getElementById('fileInput');
     const imgElement = document.getElementById('image');
-    const konvaContainer = document.getElementById('konva-container');
+    const canvas = document.getElementById('draw-canvas');
+    const ctx = canvas.getContext('2d');
     const content = document.getElementById('content');
 
-    const scrollStep = 200;
     let scrollOffset = 0;
+    const scrollStep = 200;
     let currentColor = 'red';
     let currentThickness = 2;
-    let stage = null, layer = null, isDrawing = false, lastLine = null;
+
+    let drawing = false;
+    let lastX, lastY;
+
+    document.getElementById('scrollUp').onclick = () => scrollContent(-scrollStep);
+    document.getElementById('scrollDown').onclick = () => scrollContent(scrollStep);
 
     function scrollContent(delta) {
       const maxScroll = content.scrollHeight - window.innerHeight;
@@ -157,106 +143,66 @@
       content.style.transform = `translateY(-${scrollOffset}px)`;
     }
 
-    document.getElementById('scrollUp').addEventListener('click', () => scrollContent(-scrollStep));
-    document.getElementById('scrollDown').addEventListener('click', () => scrollContent(scrollStep));
-
     document.querySelectorAll('.colors button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentColor = btn.dataset.color;
-      });
+      btn.onclick = () => currentColor = btn.dataset.color;
     });
 
     document.querySelectorAll('.thicknesses button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentThickness = parseInt(btn.dataset.thickness);
-      });
+      btn.onclick = () => currentThickness = parseInt(btn.dataset.thickness);
     });
 
-    fileInput.addEventListener('change', function (e) {
+    fileInput.onchange = (e) => {
       const file = e.target.files[0];
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = function (event) {
+        reader.onload = (event) => {
           imgElement.src = event.target.result;
         };
         reader.readAsDataURL(file);
       }
+    };
+
+    imgElement.onload = () => {
+      canvas.width = imgElement.clientWidth;
+      canvas.height = imgElement.clientHeight;
+      canvas.style.width = imgElement.clientWidth + 'px';
+      canvas.style.height = imgElement.clientHeight + 'px';
+      canvas.style.top = imgElement.offsetTop + 'px';
+      canvas.style.left = '0px';
+      canvas.style.pointerEvents = 'auto';
+    };
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'pen') return;
+      drawing = true;
+      const rect = canvas.getBoundingClientRect();
+      lastX = e.clientX - rect.left;
+      lastY = e.clientY - rect.top;
     });
 
-    imgElement.onload = function () {
-      konvaContainer.innerHTML = '';
-      konvaContainer.style.pointerEvents = 'auto';
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drawing || e.pointerType !== 'pen') return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      ctx.strokeStyle = currentColor;
+      ctx.lineWidth = currentThickness;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      lastX = x;
+      lastY = y;
+    });
 
-      const width = imgElement.clientWidth;
-      const height = imgElement.clientHeight;
+    canvas.addEventListener('pointerup', (e) => {
+      if (e.pointerType !== 'pen') return;
+      drawing = false;
+    });
 
-      konvaContainer.style.width = width + 'px';
-      konvaContainer.style.height = height + 'px';
-
-      // 🧼 Prevent duplicate stages
-      if (stage) {
-        stage.destroy();
-      }
-
-      stage = new Konva.Stage({
-        container: 'konva-container',
-        width: width,
-        height: height
-      });
-
-      layer = new Konva.Layer();
-      stage.add(layer);
-
-      stage.on('pointerdown', function (e) {
-        if (e.evt.pointerType !== 'pen') return;
-
-        isDrawing = true;
-        const pos = stage.getPointerPosition();
-        lastLine = new Konva.Line({
-          stroke: currentColor,
-          strokeWidth: currentThickness,
-          globalCompositeOperation: 'source-over',
-          points: [pos.x, pos.y],
-          lineCap: 'round',
-          lineJoin: 'round'
-        });
-        layer.add(lastLine);
-
-        // Limit number of lines to prevent buildup
-        if (layer.children.length > 1000) {
-          layer.children[0].destroy();
-        }
-      });
-
-      stage.on('pointerup', function (e) {
-        if (e.evt.pointerType === 'pen') {
-          isDrawing = false;
-        }
-      });
-
-      stage.on('pointermove', function (e) {
-        if (!isDrawing || e.evt.pointerType !== 'pen') return;
-        const pos = stage.getPointerPosition();
-        const newPoints = lastLine.points().concat([pos.x, pos.y]);
-        lastLine.points(newPoints);
-        layer.batchDraw();
-      });
-
-      stage.on('pointercancel', function (e) {
-        if (e.evt.pointerType === 'pen') isDrawing = false;
-      });
-
-      stage.on('lostpointercapture', function (e) {
-        if (e.evt.pointerType === 'pen') isDrawing = false;
-      });
-
-      // Ensure pointer capture is maintained
-      stage.getContent().addEventListener('pointerdown', (e) => {
-        if (e.pointerType === 'pen') {
-          e.target.setPointerCapture(e.pointerId);
-        }
-      });
-    };
+    canvas.addEventListener('pointercancel', () => drawing = false);
+    canvas.addEventListener('lostpointercapture', () => drawing = false);
   </script>
 </body>
 </html>
