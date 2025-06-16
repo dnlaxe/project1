@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tablet Image Annotator</title>
   <style>
     html, body {
@@ -11,6 +11,7 @@
       overflow: hidden;
       height: 100vh;
       font-family: sans-serif;
+      touch-action: none;
     }
 
     .toolbar {
@@ -20,48 +21,52 @@
       background: rgba(255, 255, 255, 0.95);
       padding: 10px;
       border-radius: 8px;
-      z-index: 1000;
+      z-index: 10;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    .toolbar input[type="file"],
-    .toolbar button {
-      font-size: 16px;
-    }
-
-    .color-buttons button,
-    .thickness-buttons button {
-      padding: 5px 10px;
-      margin-right: 5px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .scroll-button {
+    .nav-buttons {
       position: fixed;
-      font-size: 20px;
-      padding: 10px 15px;
-      z-index: 1001;
-      background: rgba(255, 255, 255, 0.9);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      user-select: none;
-      touch-action: manipulation;
-    }
-
-    #scrollUp {
       top: 10px;
       left: 10px;
+      z-index: 11;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    #scrollDown {
-      bottom: 10px;
-      left: 10px;
+    .toolbar button,
+    .nav-buttons button {
+      font-size: 16px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .colors, .thicknesses {
+      display: flex;
+      gap: 6px;
+    }
+
+    .colors button {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid #00000033;
+    }
+
+    .colors button.red { background: red; }
+    .colors button.green { background: green; }
+    .colors button.blue { background: blue; }
+
+    .thicknesses button {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      background: #ddd;
     }
 
     #scroll-container {
@@ -92,38 +97,33 @@
       left: 0;
       pointer-events: none;
     }
-
-    .active {
-      background-color: #ddd;
-    }
   </style>
 </head>
 <body>
 
-  <!-- Scroll Buttons -->
-  <button id="scrollUp" class="scroll-button">⬆️</button>
-  <button id="scrollDown" class="scroll-button">⬇️</button>
+  <div class="nav-buttons">
+    <button id="scrollUp">⬆️</button>
+    <button id="scrollDown">⬇️</button>
+  </div>
 
-  <!-- Toolbar -->
   <div class="toolbar">
     <input type="file" id="fileInput" accept="image/*" />
 
-    <div class="color-buttons">
-      <label>Color:</label>
-      <button data-color="red" class="color-option">Red</button>
-      <button data-color="green" class="color-option">Green</button>
-      <button data-color="blue" class="color-option">Blue</button>
+    <div>Color:</div>
+    <div class="colors">
+      <button class="red" data-color="red"></button>
+      <button class="green" data-color="green"></button>
+      <button class="blue" data-color="blue"></button>
     </div>
 
-    <div class="thickness-buttons">
-      <label>Thickness:</label>
-      <button data-thickness="2" class="thickness-option">Thin</button>
-      <button data-thickness="5" class="thickness-option">Medium</button>
-      <button data-thickness="10" class="thickness-option">Thick</button>
+    <div>Thickness:</div>
+    <div class="thicknesses">
+      <button data-thickness="2">●</button>
+      <button data-thickness="5">●●</button>
+      <button data-thickness="10">●●●</button>
     </div>
   </div>
 
-  <!-- Scrollable Content -->
   <div id="scroll-container">
     <div id="content">
       <img id="image" src="" alt="Chosen Image" />
@@ -137,11 +137,12 @@
     const imgElement = document.getElementById('image');
     const konvaContainer = document.getElementById('konva-container');
     const content = document.getElementById('content');
+
     const scrollStep = 200;
     let scrollOffset = 0;
-
-    let currentColor = "red";
+    let currentColor = 'red';
     let currentThickness = 2;
+    let stage, layer, isDrawing = false, lastLine;
 
     function scrollContent(delta) {
       const maxScroll = content.scrollHeight - window.innerHeight;
@@ -152,23 +153,19 @@
     document.getElementById('scrollUp').addEventListener('click', () => scrollContent(-scrollStep));
     document.getElementById('scrollDown').addEventListener('click', () => scrollContent(scrollStep));
 
-    document.querySelectorAll('.color-option').forEach(btn => {
+    // Color selection
+    document.querySelectorAll('.colors button').forEach(btn => {
       btn.addEventListener('click', () => {
-        currentColor = btn.getAttribute('data-color');
-        document.querySelectorAll('.color-option').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        currentColor = btn.dataset.color;
       });
     });
 
-    document.querySelectorAll('.thickness-option').forEach(btn => {
+    // Thickness selection
+    document.querySelectorAll('.thicknesses button').forEach(btn => {
       btn.addEventListener('click', () => {
-        currentThickness = parseInt(btn.getAttribute('data-thickness'));
-        document.querySelectorAll('.thickness-option').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        currentThickness = parseInt(btn.dataset.thickness);
       });
     });
-
-    let stage, layer, isDrawing = false, lastLine;
 
     fileInput.addEventListener('change', function (e) {
       const file = e.target.files[0];
@@ -200,7 +197,10 @@
       layer = new Konva.Layer();
       stage.add(layer);
 
-      stage.on('mousedown touchstart', function () {
+      // Only allow stylus (pen) input
+      stage.on('pointerdown', function (e) {
+        if (e.evt.pointerType !== 'pen') return;
+
         isDrawing = true;
         const pos = stage.getPointerPosition();
         lastLine = new Konva.Line({
@@ -214,12 +214,13 @@
         layer.add(lastLine);
       });
 
-      stage.on('mouseup touchend', function () {
+      stage.on('pointerup', function (e) {
+        if (e.evt.pointerType !== 'pen') return;
         isDrawing = false;
       });
 
-      stage.on('mousemove touchmove', function () {
-        if (!isDrawing) return;
+      stage.on('pointermove', function (e) {
+        if (!isDrawing || e.evt.pointerType !== 'pen') return;
         const pos = stage.getPointerPosition();
         const newPoints = lastLine.points().concat([pos.x, pos.y]);
         lastLine.points(newPoints);
@@ -229,3 +230,4 @@
   </script>
 </body>
 </html>
+
