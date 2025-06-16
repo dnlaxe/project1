@@ -228,6 +228,18 @@
         isDrawing = false;
       });
 
+      stage.on('pointercancel', function (e) {
+        if (e.evt.pointerType === 'pen') {
+          isDrawing = false;
+        }
+      });
+
+      stage.on('lostpointercapture', function (e) {
+        if (e.evt.pointerType === 'pen') {
+          isDrawing = false;
+        }
+      });
+
       stage.on('pointermove', function (e) {
         if (!isDrawing || e.evt.pointerType !== 'pen') return;
         const pos = stage.getPointerPosition();
