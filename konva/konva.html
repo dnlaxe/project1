@@ -203,6 +203,13 @@
         height: height
       });
 
+      stage.getContent().addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'pen') {
+          e.target.setPointerCapture(e.pointerId);
+        }
+      });
+
+
       layer = new Konva.Layer();
       stage.add(layer);
 
@@ -226,18 +233,6 @@
       stage.on('pointerup', function (e) {
         if (e.evt.pointerType !== 'pen') return;
         isDrawing = false;
-      });
-
-      stage.on('pointercancel', function (e) {
-        if (e.evt.pointerType === 'pen') {
-          isDrawing = false;
-        }
-      });
-
-      stage.on('lostpointercapture', function (e) {
-        if (e.evt.pointerType === 'pen') {
-          isDrawing = false;
-        }
       });
 
       stage.on('pointermove', function (e) {
