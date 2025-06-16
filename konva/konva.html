@@ -149,7 +149,7 @@
     let scrollOffset = 0;
     let currentColor = 'red';
     let currentThickness = 2;
-    let stage, layer, isDrawing = false, lastLine;
+    let stage = null, layer = null, isDrawing = false, lastLine = null;
 
     function scrollContent(delta) {
       const maxScroll = content.scrollHeight - window.innerHeight;
@@ -160,14 +160,12 @@
     document.getElementById('scrollUp').addEventListener('click', () => scrollContent(-scrollStep));
     document.getElementById('scrollDown').addEventListener('click', () => scrollContent(scrollStep));
 
-    // Color selection
     document.querySelectorAll('.colors button').forEach(btn => {
       btn.addEventListener('click', () => {
         currentColor = btn.dataset.color;
       });
     });
 
-    // Thickness selection
     document.querySelectorAll('.thicknesses button').forEach(btn => {
       btn.addEventListener('click', () => {
         currentThickness = parseInt(btn.dataset.thickness);
@@ -195,6 +193,11 @@
       konvaContainer.style.width = width + 'px';
       konvaContainer.style.height = height + 'px';
 
+      // 🧼 Prevent duplicate stages
+      if (stage) {
+        stage.destroy();
+      }
+
       stage = new Konva.Stage({
         container: 'konva-container',
         width: width,
@@ -204,11 +207,9 @@
       layer = new Konva.Layer();
       stage.add(layer);
 
-      // Ensure stylus-only drawing
       stage.on('pointerdown', function (e) {
         if (e.evt.pointerType !== 'pen') return;
 
-        e.target.setPointerCapture(e.evt.pointerId); // ensure capture
         isDrawing = true;
         const pos = stage.getPointerPosition();
         lastLine = new Konva.Line({
@@ -220,11 +221,17 @@
           lineJoin: 'round'
         });
         layer.add(lastLine);
+
+        // Limit number of lines to prevent buildup
+        if (layer.children.length > 1000) {
+          layer.children[0].destroy();
+        }
       });
 
       stage.on('pointerup', function (e) {
-        if (e.evt.pointerType !== 'pen') return;
-        isDrawing = false;
+        if (e.evt.pointerType === 'pen') {
+          isDrawing = false;
+        }
       });
 
       stage.on('pointermove', function (e) {
@@ -235,7 +242,6 @@
         layer.batchDraw();
       });
 
-      // 🛠️ Fix for dead input
       stage.on('pointercancel', function (e) {
         if (e.evt.pointerType === 'pen') isDrawing = false;
       });
@@ -244,7 +250,7 @@
         if (e.evt.pointerType === 'pen') isDrawing = false;
       });
 
-      // 📌 Ensure pointer capture always on stylus down
+      // Ensure pointer capture is maintained
       stage.getContent().addEventListener('pointerdown', (e) => {
         if (e.pointerType === 'pen') {
           e.target.setPointerCapture(e.pointerId);
