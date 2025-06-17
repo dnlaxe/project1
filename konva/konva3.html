@@ -287,17 +287,8 @@
         ctx.strokeStyle = color;
         ctx.lineWidth = size;
         ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        // ✅ Add shadow properties here
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';  // color of the shadow
-        ctx.shadowBlur = 1;                     // how soft the shadow is
-        ctx.shadowOffsetX = 1;                  // horizontal offset
-        ctx.shadowOffsetY = 1;                  // vertical offset
-
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
-
         lastX = pos.x;
         lastY = pos.y;
       } else if (mode === 'present') {
