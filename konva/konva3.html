@@ -100,9 +100,10 @@
 
     #dotIndicator {
       position: absolute;
-      width: 20px;
-      height: 20px;
+      width: 25px;
+      height: 25px;
       background: yellow;
+      border: 1px solid black;
       border-radius: 50%;
       pointer-events: none;
       display: none;
@@ -283,11 +284,27 @@
       const pos = getOffset(e);
 
       if (mode === 'draw' && drawing) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = size;
-        ctx.lineCap = 'round';
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
+        // Draw border first
+ctx.strokeStyle = 'black'; // Border color
+ctx.lineWidth = size + 2;  // Border is 1px around the line
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+ctx.beginPath();
+ctx.moveTo(lastX, lastY);
+ctx.lineTo(pos.x, pos.y);
+ctx.stroke();
+
+// Draw main line on top
+ctx.strokeStyle = color;  // Main drawing color
+ctx.lineWidth = size;
+ctx.beginPath();
+ctx.moveTo(lastX, lastY);
+ctx.lineTo(pos.x, pos.y);
+ctx.stroke();
+
+lastX = pos.x;
+lastY = pos.y;
+
         lastX = pos.x;
         lastY = pos.y;
       } else if (mode === 'present') {
