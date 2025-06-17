@@ -172,20 +172,31 @@
     let insertImageData = null;
 
     image.onload = () => {
-      canvas.width = image.clientWidth;
-      canvas.height = image.clientHeight;
-      canvas.style.width = canvas.width + 'px';
-      canvas.style.height = canvas.height + 'px';
+      const dpr = window.devicePixelRatio || 1;
+
+      // Match canvas size to image display size * dpr
+      const displayWidth = image.clientWidth;
+      const displayHeight = image.clientHeight;
+
+      canvas.width = displayWidth * dpr;
+      canvas.height = displayHeight * dpr;
+
+      canvas.style.width = displayWidth + 'px';
+      canvas.style.height = displayHeight + 'px';
       canvas.style.top = image.offsetTop + 'px';
 
-      // Draw image onto canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      // Scale the drawing context so 1 unit = 1 CSS pixel
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any prior scaling
+      ctx.scale(dpr, dpr);
 
-      // Save as base layer
+      // Draw the image at native resolution
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, displayWidth, displayHeight);
+
       drawHistory.length = 0;
-      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      drawHistory.push(ctx.getImageData(0, 0, displayWidth, displayHeight));
     };
+
 
     document.getElementById('scrollUp').addEventListener('click', () => {
       scrollOffset = Math.max(0, scrollOffset - scrollStep);
