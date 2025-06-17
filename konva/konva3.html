@@ -315,46 +315,42 @@
       }
     }
 
-    function endDraw(e) {
-      if (mode === 'draw' && drawing) {
-        drawing = false;
-        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-      } else if (mode === 'present') {
-        dot.style.display = 'none';
-      } else if (mode === 'insert' && isInserting) {
-        isInserting = false;
-        insertStartY = null;
-        insertCurrentY = null;
-        insertImageData = null;
+  function endDraw(e) {
+    if (mode === 'draw' && drawing) {
+      drawing = false;
+      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    } else if (mode === 'present') {
+      dot.style.display = 'none';
+    } else if (mode === 'insert' && isInserting) {
+      isInserting = false;
+      insertStartY = null;
+      insertCurrentY = null;
+      insertImageData = null;
 
-        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-
-        // Apply canvas update to image and clear canvas
-        const newImageURL = canvas.toDataURL('image/png');
-        image.src = newImageURL;
-
-        // Switch back to draw mode
-        mode = 'draw';
-        setActiveTool('drawTool');
-      }
-
+      // Prepare updated image data
       const newImageURL = canvas.toDataURL('image/png');
+
+      // Wait for image to load before clearing and resetting
       image.onload = () => {
-        // Resize canvas to match new image (if needed)
         canvas.width = image.clientWidth;
         canvas.height = image.clientHeight;
+        canvas.style.width = canvas.width + 'px';
+        canvas.style.height = canvas.height + 'px';
+        canvas.style.top = image.offsetTop + 'px';
 
-        // Clear canvas AFTER image has loaded and been drawn
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Reset history and save clean slate
         drawHistory.length = 0;
         drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
       };
 
       image.src = newImageURL;
 
+      // Switch back to draw mode
+      mode = 'draw';
+      setActiveTool('drawTool');
     }
+  }
+
 
     undoBtn.addEventListener('click', () => {
       if (drawHistory.length > 0) {
