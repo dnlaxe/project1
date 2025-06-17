@@ -136,6 +136,7 @@
       <button data-size="5">●●</button>
       <button data-size="10">●●●</button>
     </div>
+    <button id="undoBtn">↩️ Undo</button>
   </div>
 
   <div id="scroll-container">
@@ -163,6 +164,8 @@
     let mode = 'draw';
 
     const dot = document.getElementById('dotIndicator');
+    const undoBtn = document.getElementById('undoBtn');
+    const drawHistory = [];
 
     image.onload = () => {
       canvas.width = image.clientWidth;
@@ -171,6 +174,7 @@
       canvas.style.height = canvas.height + 'px';
       canvas.style.top = image.offsetTop + 'px';
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawHistory.length = 0;
     };
 
     document.getElementById('scrollUp').addEventListener('click', () => {
@@ -239,6 +243,8 @@
       }
       if (mode === 'draw') {
         drawing = true;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
       } else if (mode === 'present') {
         dot.style.left = (pos.x + canvas.offsetLeft - 10) + 'px';
         dot.style.top = (pos.y + canvas.offsetTop - 10 - scrollOffset) + 'px';
@@ -255,8 +261,6 @@
         ctx.strokeStyle = color;
         ctx.lineWidth = size;
         ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
         lastX = pos.x;
@@ -268,12 +272,25 @@
     }
 
     function endDraw(e) {
-      if (mode === 'draw') {
+      if (mode === 'draw' && drawing) {
         drawing = false;
+        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
       } else if (mode === 'present') {
         dot.style.display = 'none';
       }
     }
+
+    undoBtn.addEventListener('click', () => {
+      if (drawHistory.length > 0) {
+        drawHistory.pop(); // remove current
+        const previous = drawHistory[drawHistory.length - 1];
+        if (previous) {
+          ctx.putImageData(previous, 0, 0);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+    });
 
     canvas.addEventListener('pointerdown', startDraw, { passive: false });
     canvas.addEventListener('pointermove', moveDraw, { passive: false });
