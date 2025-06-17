@@ -102,7 +102,7 @@
       position: absolute;
       width: 20px;
       height: 20px;
-      background: rgba(0, 0, 255, 0.4);
+      background: yellow;
       border-radius: 50%;
       pointer-events: none;
       display: none;
@@ -124,7 +124,6 @@
       <button id="drawTool" class="active">✏️ Draw</button>
       <button id="presentTool">🎯 Present</button>
       <button id="insertTool">➕ Insert Space</button>
-      <button id="undoInsertBtn">🧹 Undo Insert Space</button>
     </div>
     <div>Color:</div>
     <div class="colors">
@@ -151,8 +150,6 @@
   <div id="dotIndicator"></div>
 
   <script>
-    const insertHistory = [];
-
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const image = document.getElementById('image');
@@ -330,9 +327,7 @@ function endDraw(e) {
     insertCurrentY = null;
     insertImageData = null;
 
-    const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    drawHistory.push(currentState);
-    insertHistory.push(currentState); // Save state for undo insert
+    drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 
     // Generate new image and update <img> src
     const newImageURL = canvas.toDataURL('image/png');
@@ -359,7 +354,6 @@ function endDraw(e) {
 }
 
 
-
     undoBtn.addEventListener('click', () => {
       if (drawHistory.length > 0) {
         drawHistory.pop();
@@ -371,28 +365,6 @@ function endDraw(e) {
         }
       }
     });
-
-    document.getElementById('undoInsertBtn').addEventListener('click', () => {
-  if (insertHistory.length === 0) return;
-
-  const previous = insertHistory.pop();
-  if (previous) {
-    ctx.putImageData(previous, 0, 0);
-
-    // Update <img> and clear canvas *after* image is loaded
-    const newImageURL = canvas.toDataURL('image/png');
-    image.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-      // Re-sync draw history
-      drawHistory.length = 0;
-      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    };
-    image.src = newImageURL;
-  }
-});
-
 
     canvas.addEventListener('pointerdown', startDraw, { passive: false });
     canvas.addEventListener('pointermove', moveDraw, { passive: false });
