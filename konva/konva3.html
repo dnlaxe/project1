@@ -172,31 +172,20 @@
     let insertImageData = null;
 
     image.onload = () => {
-      const dpr = window.devicePixelRatio || 1;
-
-      // Match canvas size to image display size * dpr
-      const displayWidth = image.clientWidth;
-      const displayHeight = image.clientHeight;
-
-      canvas.width = displayWidth * dpr;
-      canvas.height = displayHeight * dpr;
-
-      canvas.style.width = displayWidth + 'px';
-      canvas.style.height = displayHeight + 'px';
+      canvas.width = image.clientWidth;
+      canvas.height = image.clientHeight;
+      canvas.style.width = canvas.width + 'px';
+      canvas.style.height = canvas.height + 'px';
       canvas.style.top = image.offsetTop + 'px';
 
-      // Scale the drawing context so 1 unit = 1 CSS pixel
-      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any prior scaling
-      ctx.scale(dpr, dpr);
-
-      // Draw the image at native resolution
+      // Draw image onto canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, 0, 0, displayWidth, displayHeight);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
+      // Save as base layer
       drawHistory.length = 0;
-      drawHistory.push(ctx.getImageData(0, 0, displayWidth, displayHeight));
+      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     };
-
 
     document.getElementById('scrollUp').addEventListener('click', () => {
       scrollOffset = Math.max(0, scrollOffset - scrollStep);
@@ -273,6 +262,8 @@
         canvas.setPointerCapture(e.pointerId);
       }
 
+      const dpr = window.devicePixelRatio || 1;
+
       if (mode === 'draw') {
         drawing = true;
         ctx.beginPath();
@@ -284,19 +275,21 @@
       } else if (mode === 'insert') {
         insertStartY = pos.y;
         isInserting = true;
-        insertImageData = ctx.getImageData(0, insertStartY, canvas.width, canvas.height - insertStartY);
+        const insertY = insertStartY * dpr;
+        insertImageData = ctx.getImageData(0, insertY, canvas.width, canvas.height - insertY);
       }
     }
-
     function moveDraw(e) {
       if (!isStylus(e)) return;
       e.preventDefault();
       const pos = getOffset(e);
+      const dpr = window.devicePixelRatio || 1;
 
       if (mode === 'draw' && drawing) {
         ctx.strokeStyle = color;
         ctx.lineWidth = size;
         ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
         lastX = pos.x;
@@ -307,6 +300,8 @@
       } else if (mode === 'insert' && isInserting) {
         insertCurrentY = Math.max(pos.y, insertStartY);
         const gap = insertCurrentY - insertStartY;
+        const gapPx = gap * dpr;
+        const insertY = insertStartY * dpr;
 
         const baseImage = drawHistory.length > 0 ? drawHistory[drawHistory.length - 1] : null;
         if (baseImage) {
@@ -317,13 +312,16 @@
 
         if (gap > 0 && insertImageData) {
           ctx.fillStyle = 'white';
-          ctx.fillRect(0, insertStartY, canvas.width, gap);
-          ctx.putImageData(insertImageData, 0, insertStartY + gap);
+          ctx.fillRect(0, insertY, canvas.width, gapPx);
+          ctx.putImageData(insertImageData, 0, insertY + gapPx);
         }
       }
     }
 
+
 function endDraw(e) {
+  const dpr = window.devicePixelRatio || 1;
+
   if (mode === 'draw' && drawing) {
     drawing = false;
     drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
@@ -337,25 +335,18 @@ function endDraw(e) {
 
     drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 
-    // Generate new image and update <img> src
     const newImageURL = canvas.toDataURL('image/png');
     image.onload = () => {
-      // Clear canvas *after* image is reloaded
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Optional: redraw base layer (if needed for annotation)
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-      // Reset canvas style (helpful if offsets changed)
+      const displayWidth = image.clientWidth;
+      const displayHeight = image.clientHeight;
+      ctx.drawImage(image, 0, 0, displayWidth, displayHeight);
       canvas.style.top = image.offsetTop + 'px';
-
-      // Restore draw history state (optional)
       drawHistory.length = 0;
       drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     };
     image.src = newImageURL;
 
-    // Switch back to draw mode
     mode = 'draw';
     setActiveTool('drawTool');
   }
