@@ -284,26 +284,19 @@
       const pos = getOffset(e);
 
       if (mode === 'draw' && drawing) {
-        // Draw border first
-ctx.strokeStyle = 'black'; // Border color
-ctx.lineWidth = size + 2;  // Border is 1px around the line
-ctx.lineCap = 'round';
-ctx.lineJoin = 'round';
-ctx.beginPath();
-ctx.moveTo(lastX, lastY);
-ctx.lineTo(pos.x, pos.y);
-ctx.stroke();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
 
-// Draw main line on top
-ctx.strokeStyle = color;  // Main drawing color
-ctx.lineWidth = size;
-ctx.beginPath();
-ctx.moveTo(lastX, lastY);
-ctx.lineTo(pos.x, pos.y);
-ctx.stroke();
+        // ✅ Add shadow properties here
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';  // color of the shadow
+        ctx.shadowBlur = 4;                     // how soft the shadow is
+        ctx.shadowOffsetX = 2;                  // horizontal offset
+        ctx.shadowOffsetY = 2;                  // vertical offset
 
-lastX = pos.x;
-lastY = pos.y;
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
 
         lastX = pos.x;
         lastY = pos.y;
