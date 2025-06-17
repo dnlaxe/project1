@@ -332,12 +332,28 @@
         // Apply canvas update to image and clear canvas
         const newImageURL = canvas.toDataURL('image/png');
         image.src = newImageURL;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Switch back to draw mode
         mode = 'draw';
         setActiveTool('drawTool');
       }
+
+      const newImageURL = canvas.toDataURL('image/png');
+      image.onload = () => {
+        // Resize canvas to match new image (if needed)
+        canvas.width = image.clientWidth;
+        canvas.height = image.clientHeight;
+
+        // Clear canvas AFTER image has loaded and been drawn
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Reset history and save clean slate
+        drawHistory.length = 0;
+        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      };
+
+      image.src = newImageURL;
+
     }
 
     undoBtn.addEventListener('click', () => {
