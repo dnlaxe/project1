@@ -97,26 +97,9 @@
       touch-action: none;
       pointer-events: auto;
     }
-
-    .mode button.active {
-      border: 2px solid #000;
-    }
-
   </style>
 </head>
 <body>
-
-  <div id="presentDot" style="
-    position: fixed;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: rgba(0,0,255,0.6);
-    pointer-events: none;
-    display: none;
-    z-index: 100;
-  "></div>
-
 
   <div class="nav-buttons">
     <button id="scrollUp">/\</button>
@@ -125,10 +108,6 @@
 
   <div class="toolbar">
     <input type="file" id="fileInput" accept="image/*" />
-    <div class="mode">
-    <button id="drawMode" class="active">✏️</button>
-    <button id="presentMode">🔵</button>
-  </div>
     <div class="colors">
       <button class="red" data-color="red"></button>
       <button class="green" data-color="green"></button>
@@ -145,123 +124,94 @@
     <div id="content"></div>
   </div>
 
-<script>
-  const fileInput = document.getElementById('fileInput');
-  const content = document.getElementById('content');
-  const presentDot = document.getElementById('presentDot');
-  let color = 'red';
-  let size = 2;
-  let mode = 'draw'; // or 'present'
-  let scrollOffset = 0;
-  const scrollStep = 200;
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const content = document.getElementById('content');
+    let color = 'red';
+    let size = 2;
+    let scrollOffset = 0;
+    const scrollStep = 200;
 
-  // Scroll buttons
-  document.getElementById('scrollUp').addEventListener('click', () => {
-    scrollOffset = Math.max(0, scrollOffset - scrollStep);
-    content.style.transform = `translateY(-${scrollOffset}px)`;
-  });
-
-  document.getElementById('scrollDown').addEventListener('click', () => {
-    const maxScroll = content.scrollHeight - window.innerHeight;
-    scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
-    content.style.transform = `translateY(-${scrollOffset}px)`;
-  });
-
-  // Mode toggle buttons
-  document.getElementById('drawMode').addEventListener('click', () => {
-    mode = 'draw';
-    presentDot.style.display = 'none';
-    toggleActive('drawMode');
-  });
-
-  document.getElementById('presentMode').addEventListener('click', () => {
-    mode = 'present';
-    toggleActive('presentMode');
-  });
-
-  function toggleActive(activeId) {
-    document.querySelectorAll('.mode button').forEach(btn => {
-      btn.classList.toggle('active', btn.id === activeId);
+    // Scroll buttons
+    document.getElementById('scrollUp').addEventListener('click', () => {
+      scrollOffset = Math.max(0, scrollOffset - scrollStep);
+      content.style.transform = `translateY(-${scrollOffset}px)`;
     });
-  }
 
-  // Color and thickness buttons
-  document.querySelectorAll('.colors button').forEach(btn => {
-    btn.addEventListener('click', () => color = btn.dataset.color);
-  });
+    document.getElementById('scrollDown').addEventListener('click', () => {
+      const maxScroll = content.scrollHeight - window.innerHeight;
+      scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
+      content.style.transform = `translateY(-${scrollOffset}px)`;
+    });
 
-  document.querySelectorAll('.thicknesses button').forEach(btn => {
-    btn.addEventListener('click', () => size = parseInt(btn.dataset.size));
-  });
+    // Color and thickness buttons
+    document.querySelectorAll('.colors button').forEach(btn => {
+      btn.addEventListener('click', () => color = btn.dataset.color);
+    });
 
-  // Handle new image upload
-  fileInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    document.querySelectorAll('.thicknesses button').forEach(btn => {
+      btn.addEventListener('click', () => size = parseInt(btn.dataset.size));
+    });
 
-    const reader = new FileReader();
-    reader.onload = evt => {
-      const image = new Image();
-      image.src = evt.target.result;
+    // Add new image + canvas
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
 
-      image.onload = () => {
-        const block = document.createElement('div');
-        block.className = 'image-block';
+      const reader = new FileReader();
+      reader.onload = evt => {
+        const image = new Image();
+        image.src = evt.target.result;
 
-        const canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        canvas.style.width = '100%';
-        canvas.style.height = 'auto';
+        image.onload = () => {
+          const block = document.createElement('div');
+          block.className = 'image-block';
 
-        block.appendChild(image);
-        block.appendChild(canvas);
-        content.appendChild(block);
+          const canvas = document.createElement('canvas');
+          canvas.width = image.width;
+          canvas.height = image.height;
+          canvas.style.width = '100%';
+          canvas.style.height = 'auto';
 
-        const ctx = canvas.getContext('2d');
-        let drawing = false;
-        let lastX = 0, lastY = 0;
+          block.appendChild(image);
+          block.appendChild(canvas);
+          content.appendChild(block);
 
-        function isStylus(e) {
-          return (e.pointerType === 'pen') ||
-                 (e.touches && e.touches[0]?.touchType === 'stylus');
-        }
+          const ctx = canvas.getContext('2d');
+          let drawing = false;
+          let lastX = 0, lastY = 0;
 
-        function getOffset(e) {
-          const rect = canvas.getBoundingClientRect();
-          if (e.touches) {
-            const t = e.touches[0];
-            return { x: t.clientX - rect.left, y: t.clientY - rect.top };
-          } else {
-            return { x: e.offsetX, y: e.offsetY };
+          function isStylus(e) {
+            return (e.pointerType === 'pen') ||
+                   (e.touches && e.touches[0]?.touchType === 'stylus');
           }
-        }
 
-        function startDraw(e) {
-          if (!isStylus(e)) return;
-          e.preventDefault();
-          const pos = getOffset(e);
+          function getOffset(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches) {
+              const t = e.touches[0];
+              return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+            } else {
+              return { x: e.offsetX, y: e.offsetY };
+            }
+          }
 
-          if (mode === 'draw') {
+          function startDraw(e) {
+            if (!isStylus(e)) return;
+            e.preventDefault();
+            const pos = getOffset(e);
             lastX = pos.x;
             lastY = pos.y;
             drawing = true;
             if (e.pointerId !== undefined) {
               canvas.setPointerCapture(e.pointerId);
             }
-          } else if (mode === 'present') {
-            presentDot.style.left = `${e.clientX - 10}px`;
-            presentDot.style.top = `${e.clientY - 10}px`;
-            presentDot.style.display = 'block';
           }
-        }
 
-        function moveDraw(e) {
-          if (!isStylus(e)) return;
-          e.preventDefault();
-          const pos = getOffset(e);
-
-          if (mode === 'draw' && drawing) {
+          function moveDraw(e) {
+            if (!drawing || !isStylus(e)) return;
+            e.preventDefault();
+            const pos = getOffset(e);
             ctx.strokeStyle = color;
             ctx.lineWidth = size;
             ctx.lineCap = 'round';
@@ -271,36 +221,25 @@
             ctx.stroke();
             lastX = pos.x;
             lastY = pos.y;
-          } else if (mode === 'present') {
-            presentDot.style.left = `${e.clientX - 10}px`;
-            presentDot.style.top = `${e.clientY - 10}px`;
           }
-        }
 
-        function endDraw(e) {
-          if (!isStylus(e)) return;
-          if (mode === 'draw') {
-            drawing = false;
-          } else if (mode === 'present') {
-            presentDot.style.display = 'none';
+          function endDraw(e) {
+            if (isStylus(e)) drawing = false;
           }
-        }
 
-        // Stylus/pointer event listeners
-        canvas.addEventListener('pointerdown', startDraw, { passive: false });
-        canvas.addEventListener('pointermove', moveDraw, { passive: false });
-        canvas.addEventListener('pointerup', endDraw, { passive: false });
-        canvas.addEventListener('pointercancel', endDraw, { passive: false });
-
-        canvas.addEventListener('touchstart', startDraw, { passive: false });
-        canvas.addEventListener('touchmove', moveDraw, { passive: false });
-        canvas.addEventListener('touchend', endDraw, { passive: false });
+          // Attach stylus event listeners
+          canvas.addEventListener('pointerdown', startDraw, { passive: false });
+          canvas.addEventListener('pointermove', moveDraw, { passive: false });
+          canvas.addEventListener('pointerup', endDraw, { passive: false });
+          canvas.addEventListener('pointercancel', endDraw, { passive: false });
+          canvas.addEventListener('touchstart', startDraw, { passive: false });
+          canvas.addEventListener('touchmove', moveDraw, { passive: false });
+          canvas.addEventListener('touchend', endDraw, { passive: false });
+        };
       };
-    };
 
-    reader.readAsDataURL(file);
-  });
-</script>
-
+      reader.readAsDataURL(file);
+    });
+  </script>
 </body>
 </html>
