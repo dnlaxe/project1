@@ -333,6 +333,10 @@
         const newImageURL = canvas.toDataURL('image/png');
         image.src = newImageURL;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Switch back to draw mode
+        mode = 'draw';
+        setActiveTool('drawTool');
       }
     }
 
