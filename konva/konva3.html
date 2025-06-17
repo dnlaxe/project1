@@ -123,6 +123,7 @@
     <div class="tools">
       <button id="drawTool" class="active">✏️ Draw</button>
       <button id="presentTool">🎯 Present</button>
+      <button id="insertTool">➕ Insert Space</button>
     </div>
     <div>Color:</div>
     <div class="colors">
@@ -167,6 +168,12 @@
     const undoBtn = document.getElementById('undoBtn');
     const drawHistory = [];
 
+    // Insert Space state
+    let insertStartY = null;
+    let insertCurrentY = null;
+    let isInserting = false;
+    let insertImageData = null;
+
     image.onload = () => {
       canvas.width = image.clientWidth;
       canvas.height = image.clientHeight;
@@ -205,21 +212,31 @@
       reader.readAsDataURL(file);
     });
 
+    // Tool switching
     document.getElementById('drawTool').addEventListener('click', () => {
       mode = 'draw';
-      document.getElementById('drawTool').classList.add('active');
-      document.getElementById('presentTool').classList.remove('active');
+      setActiveTool('drawTool');
     });
 
     document.getElementById('presentTool').addEventListener('click', () => {
       mode = 'present';
-      document.getElementById('presentTool').classList.add('active');
-      document.getElementById('drawTool').classList.remove('active');
+      setActiveTool('presentTool');
     });
 
+    document.getElementById('insertTool').addEventListener('click', () => {
+      mode = 'insert';
+      setActiveTool('insertTool');
+    });
+
+    function setActiveTool(activeId) {
+      document.querySelectorAll('.tools button').forEach(btn =>
+        btn.classList.remove('active')
+      );
+      document.getElementById(activeId).classList.add('active');
+    }
+
     function isStylus(e) {
-      return (e.pointerType === 'pen') ||
-             (e.touches && e.touches[0]?.touchType === 'stylus');
+      return (e.pointerType === 'pen') || (e.touches && e.touches[0]?.touchType === 'stylus');
     }
 
     function getOffset(e) {
@@ -241,6 +258,7 @@
       if (e.pointerId !== undefined) {
         canvas.setPointerCapture(e.pointerId);
       }
+
       if (mode === 'draw') {
         drawing = true;
         ctx.beginPath();
@@ -249,6 +267,10 @@
         dot.style.left = (pos.x + canvas.offsetLeft - 10) + 'px';
         dot.style.top = (pos.y + canvas.offsetTop - 10 - scrollOffset) + 'px';
         dot.style.display = 'block';
+      } else if (mode === 'insert') {
+        insertStartY = pos.y;
+        isInserting = true;
+        insertImageData = ctx.getImageData(0, insertStartY, canvas.width, canvas.height - insertStartY);
       }
     }
 
@@ -268,6 +290,23 @@
       } else if (mode === 'present') {
         dot.style.left = (pos.x + canvas.offsetLeft - 10) + 'px';
         dot.style.top = (pos.y + canvas.offsetTop - 10 - scrollOffset) + 'px';
+      } else if (mode === 'insert' && isInserting) {
+        insertCurrentY = Math.max(pos.y, insertStartY);
+        const gap = insertCurrentY - insertStartY;
+
+        // Redraw from history
+        const baseImage = drawHistory.length > 0 ? drawHistory[drawHistory.length - 1] : null;
+        if (baseImage) {
+          ctx.putImageData(baseImage, 0, 0);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        if (gap > 0 && insertImageData) {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, insertStartY, canvas.width, gap);
+          ctx.putImageData(insertImageData, 0, insertStartY + gap);
+        }
       }
     }
 
@@ -277,12 +316,18 @@
         drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
       } else if (mode === 'present') {
         dot.style.display = 'none';
+      } else if (mode === 'insert' && isInserting) {
+        isInserting = false;
+        insertStartY = null;
+        insertCurrentY = null;
+        insertImageData = null;
+        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
       }
     }
 
     undoBtn.addEventListener('click', () => {
       if (drawHistory.length > 0) {
-        drawHistory.pop(); // remove current
+        drawHistory.pop();
         const previous = drawHistory[drawHistory.length - 1];
         if (previous) {
           ctx.putImageData(previous, 0, 0);
