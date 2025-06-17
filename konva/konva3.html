@@ -124,122 +124,133 @@
     <div id="content"></div>
   </div>
 
-  <script>
-    const fileInput = document.getElementById('fileInput');
-    const content = document.getElementById('content');
-    let color = 'red';
-    let size = 2;
-    let scrollOffset = 0;
-    const scrollStep = 200;
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const content = document.getElementById('content');
+  let color = 'red';
+  let size = 2;
+  let scrollOffset = 0;
+  const scrollStep = 200;
 
-    // Scroll buttons
-    document.getElementById('scrollUp').addEventListener('click', () => {
-      scrollOffset = Math.max(0, scrollOffset - scrollStep);
-      content.style.transform = `translateY(-${scrollOffset}px)`;
-    });
+  // Scroll buttons
+  document.getElementById('scrollUp').addEventListener('click', () => {
+    scrollOffset = Math.max(0, scrollOffset - scrollStep);
+    content.style.transform = `translateY(-${scrollOffset}px)`;
+  });
 
-    document.getElementById('scrollDown').addEventListener('click', () => {
-      const maxScroll = content.scrollHeight - window.innerHeight;
-      scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
-      content.style.transform = `translateY(-${scrollOffset}px)`;
-    });
+  document.getElementById('scrollDown').addEventListener('click', () => {
+    const maxScroll = content.scrollHeight - window.innerHeight;
+    scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
+    content.style.transform = `translateY(-${scrollOffset}px)`;
+  });
 
-    // Color and thickness buttons
-    document.querySelectorAll('.colors button').forEach(btn => {
-      btn.addEventListener('click', () => color = btn.dataset.color);
-    });
+  // Color and thickness buttons
+  document.querySelectorAll('.colors button').forEach(btn => {
+    btn.addEventListener('click', () => color = btn.dataset.color);
+  });
 
-    document.querySelectorAll('.thicknesses button').forEach(btn => {
-      btn.addEventListener('click', () => size = parseInt(btn.dataset.size));
-    });
+  document.querySelectorAll('.thicknesses button').forEach(btn => {
+    btn.addEventListener('click', () => size = parseInt(btn.dataset.size));
+  });
 
-    // Add new image + canvas
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file || !file.type.startsWith('image/')) return;
+  // Add new image + canvas
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
 
-      const reader = new FileReader();
-      reader.onload = evt => {
-        const image = new Image();
-        image.src = evt.target.result;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      const image = new Image();
+      image.src = evt.target.result;
 
-        image.onload = () => {
-          const block = document.createElement('div');
-          block.className = 'image-block';
+      image.onload = () => {
+        const block = document.createElement('div');
+        block.className = 'image-block';
 
-          const canvas = document.createElement('canvas');
-          canvas.width = image.width;
-          canvas.height = image.height;
-          canvas.style.width = '100%';
-          canvas.style.height = 'auto';
+        const canvas = document.createElement('canvas');
 
-          block.appendChild(image);
-          block.appendChild(canvas);
-          content.appendChild(block);
+        // ✅ Use displayed size to set canvas dimensions correctly
+        const rect = image.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
 
-          const ctx = canvas.getContext('2d');
-          let drawing = false;
-          let lastX = 0, lastY = 0;
+        block.appendChild(image);
+        block.appendChild(canvas);
+        content.appendChild(block);
 
-          function isStylus(e) {
-            return (e.pointerType === 'pen') ||
-                   (e.touches && e.touches[0]?.touchType === 'stylus');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        let lastX = 0, lastY = 0;
+
+        function isStylus(e) {
+          return (e.pointerType === 'pen') ||
+                 (e.touches && e.touches[0]?.touchType === 'stylus');
+        }
+
+        // ✅ Get accurate stylus position using bounding rect
+        function getOffset(e) {
+          const rect = canvas.getBoundingClientRect();
+          if (e.touches) {
+            const t = e.touches[0];
+            return {
+              x: t.clientX - rect.left,
+              y: t.clientY - rect.top
+            };
+          } else {
+            return {
+              x: e.clientX - rect.left,
+              y: e.clientY - rect.top
+            };
           }
+        }
 
-          function getOffset(e) {
-            const rect = canvas.getBoundingClientRect();
-            if (e.touches) {
-              const t = e.touches[0];
-              return { x: t.clientX - rect.left, y: t.clientY - rect.top };
-            } else {
-              return { x: e.offsetX, y: e.offsetY };
-            }
+        function startDraw(e) {
+          if (!isStylus(e)) return;
+          e.preventDefault();
+          const pos = getOffset(e);
+          lastX = pos.x;
+          lastY = pos.y;
+          drawing = true;
+          if (e.pointerId !== undefined) {
+            canvas.setPointerCapture(e.pointerId);
           }
+        }
 
-          function startDraw(e) {
-            if (!isStylus(e)) return;
-            e.preventDefault();
-            const pos = getOffset(e);
-            lastX = pos.x;
-            lastY = pos.y;
-            drawing = true;
-            if (e.pointerId !== undefined) {
-              canvas.setPointerCapture(e.pointerId);
-            }
-          }
+        function moveDraw(e) {
+          if (!drawing || !isStylus(e)) return;
+          e.preventDefault();
+          const pos = getOffset(e);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = size;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(pos.x, pos.y);
+          ctx.stroke();
+          lastX = pos.x;
+          lastY = pos.y;
+        }
 
-          function moveDraw(e) {
-            if (!drawing || !isStylus(e)) return;
-            e.preventDefault();
-            const pos = getOffset(e);
-            ctx.strokeStyle = color;
-            ctx.lineWidth = size;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            lastX = pos.x;
-            lastY = pos.y;
-          }
+        function endDraw(e) {
+          if (isStylus(e)) drawing = false;
+        }
 
-          function endDraw(e) {
-            if (isStylus(e)) drawing = false;
-          }
-
-          // Attach stylus event listeners
-          canvas.addEventListener('pointerdown', startDraw, { passive: false });
-          canvas.addEventListener('pointermove', moveDraw, { passive: false });
-          canvas.addEventListener('pointerup', endDraw, { passive: false });
-          canvas.addEventListener('pointercancel', endDraw, { passive: false });
-          canvas.addEventListener('touchstart', startDraw, { passive: false });
-          canvas.addEventListener('touchmove', moveDraw, { passive: false });
-          canvas.addEventListener('touchend', endDraw, { passive: false });
-        };
+        // Add both pointer and touch events
+        canvas.addEventListener('pointerdown', startDraw, { passive: false });
+        canvas.addEventListener('pointermove', moveDraw, { passive: false });
+        canvas.addEventListener('pointerup', endDraw, { passive: false });
+        canvas.addEventListener('pointercancel', endDraw, { passive: false });
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', moveDraw, { passive: false });
+        canvas.addEventListener('touchend', endDraw, { passive: false });
       };
+    };
 
-      reader.readAsDataURL(file);
-    });
-  </script>
+    reader.readAsDataURL(file);
+  });
+</script>
+
 </body>
 </html>
