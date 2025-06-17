@@ -315,41 +315,48 @@
       }
     }
 
-  function endDraw(e) {
-    if (mode === 'draw' && drawing) {
-      drawing = false;
-      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    } else if (mode === 'present') {
-      dot.style.display = 'none';
-    } else if (mode === 'insert' && isInserting) {
-      isInserting = false;
-      insertStartY = null;
-      insertCurrentY = null;
-      insertImageData = null;
+function endDraw(e) {
+  if (mode === 'draw' && drawing) {
+    drawing = false;
+    drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+  } else if (mode === 'present') {
+    dot.style.display = 'none';
+  } else if (mode === 'insert' && isInserting) {
+    isInserting = false;
+    insertStartY = null;
+    insertCurrentY = null;
+    insertImageData = null;
 
-      // Prepare updated image data
-      const newImageURL = canvas.toDataURL('image/png');
+    const newImageURL = canvas.toDataURL('image/png');
 
-      // Wait for image to load before clearing and resetting
-      image.onload = () => {
-        canvas.width = image.clientWidth;
-        canvas.height = image.clientHeight;
-        canvas.style.width = canvas.width + 'px';
-        canvas.style.height = canvas.height + 'px';
-        canvas.style.top = image.offsetTop + 'px';
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawHistory.length = 0;
-        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-      };
-
+    // Use a one-time onload handler
+    const tempImage = new Image();
+    tempImage.onload = () => {
+      // Draw the updated image to the image element
       image.src = newImageURL;
 
-      // Switch back to draw mode
-      mode = 'draw';
-      setActiveTool('drawTool');
-    }
+      // Wait another frame to ensure layout updates before clearing
+      requestAnimationFrame(() => {
+        canvas.width = tempImage.width;
+        canvas.height = tempImage.height;
+        canvas.style.width = tempImage.width + 'px';
+        canvas.style.height = tempImage.height + 'px';
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawHistory.length = 0;
+        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      });
+    };
+
+    // Trigger loading of the image
+    tempImage.src = newImageURL;
+
+    // Switch back to draw mode
+    mode = 'draw';
+    setActiveTool('drawTool');
   }
+}
 
 
     undoBtn.addEventListener('click', () => {
