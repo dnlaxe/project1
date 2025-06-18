@@ -104,7 +104,7 @@ button img {
 .thicknesses button {
   width: 40px;
   height: 40px;
-  background: transparent;
+  background: white;
   font-size: 14px;
   border: 1px solid black;
   border-radius: 50%;
@@ -154,14 +154,13 @@ button img {
   display: none;
   z-index: 9;
 }
-
   </style>
 </head>
 <body>
 
 <div class="nav-buttons">
-  <button><img src="up.svg" alt="Up" /></button>
-  <button><img src="down.svg" alt="Down" /></button>
+  <button id="scrollUp"><img src="up.svg" alt="Up" /></button>
+  <button id="scrollDown"><img src="down.svg" alt="Down" /></button>
 </div>
 
 <div class="toolbar">
@@ -184,197 +183,177 @@ button img {
   <button id="undoBtn"><img src="undo.svg" alt="Undo" /></button>
 </div>
 
-
-  <div id="scroll-container">
-    <div id="content">
-      <img id="image" src="" />
-      <canvas id="canvas"></canvas>
-    </div>
+<div id="scroll-container">
+  <div id="content">
+    <img id="image" src="" />
+    <canvas id="canvas"></canvas>
   </div>
+</div>
 
-  <div id="dotIndicator"></div>
+<div id="dotIndicator"></div>
 
-  <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const image = document.getElementById('image');
-    const content = document.getElementById('content');
-    const fileInput = document.getElementById('fileInput');
-    const thicknessButtons = document.querySelectorAll('.thicknesses button');
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const image = document.getElementById('image');
+const content = document.getElementById('content');
+const fileInput = document.getElementById('fileInput');
+const thicknessButtons = document.querySelectorAll('.thicknesses button');
 
-    thicknessButtons.forEach(button => {
-    button.addEventListener('click', () => {
-    // Remove 'active' from all
+thicknessButtons.forEach(button => {
+  button.addEventListener('click', () => {
     thicknessButtons.forEach(btn => btn.classList.remove('active'));
-
-    // Add 'active' to the clicked one
     button.classList.add('active');
-
-    // Optional: Set line thickness based on `data-size`
-    const size = button.getAttribute('data-size');
-    currentLineWidth = parseInt(size); // Example
+    currentLineWidth = parseInt(button.getAttribute('data-size'));
   });
 });
 
+let drawing = false;
+let lastX = 0, lastY = 0;
+let color = 'red';
+let size = 2;
+let scrollOffset = 0;
+const scrollStep = 200;
+let mode = 'draw';
+let currentLineWidth = 2;
 
-    let drawing = false;
-    let lastX = 0, lastY = 0;
-    let color = 'red';
-    let size = 2;
-    let scrollOffset = 0;
-    const scrollStep = 200;
-    let mode = 'draw';
+const dot = document.getElementById('dotIndicator');
+const undoBtn = document.getElementById('undoBtn');
+const drawHistory = [];
 
-    const dot = document.getElementById('dotIndicator');
-    const undoBtn = document.getElementById('undoBtn');
-    const drawHistory = [];
+let insertStartY = null;
+let insertCurrentY = null;
+let isInserting = false;
+let insertImageData = null;
 
-    // Insert Space state
-    let insertStartY = null;
-    let insertCurrentY = null;
-    let isInserting = false;
-    let insertImageData = null;
+image.onload = () => {
+  canvas.width = image.clientWidth;
+  canvas.height = image.clientHeight;
+  canvas.style.width = canvas.width + 'px';
+  canvas.style.height = canvas.height + 'px';
+  canvas.style.top = image.offsetTop + 'px';
 
-    image.onload = () => {
-      canvas.width = image.clientWidth;
-      canvas.height = image.clientHeight;
-      canvas.style.width = canvas.width + 'px';
-      canvas.style.height = canvas.height + 'px';
-      canvas.style.top = image.offsetTop + 'px';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-      // Draw image onto canvas
+  drawHistory.length = 0;
+  drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+};
+
+document.getElementById('scrollUp')?.addEventListener('click', () => {
+  scrollOffset = Math.max(0, scrollOffset - scrollStep);
+  content.style.transform = `translateY(-${scrollOffset}px)`;
+});
+
+document.getElementById('scrollDown')?.addEventListener('click', () => {
+  const maxScroll = content.scrollHeight - window.innerHeight;
+  scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
+  content.style.transform = `translateY(-${scrollOffset}px)`;
+});
+
+document.querySelectorAll('.colors button').forEach(btn => {
+  btn.addEventListener('click', () => color = btn.dataset.color);
+});
+
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = evt => image.src = evt.target.result;
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('drawTool').addEventListener('click', () => {
+  mode = 'draw';
+  setActiveTool('drawTool');
+});
+document.getElementById('presentTool').addEventListener('click', () => {
+  mode = 'present';
+  setActiveTool('presentTool');
+});
+document.getElementById('insertTool').addEventListener('click', () => {
+  mode = 'insert';
+  setActiveTool('insertTool');
+});
+
+function setActiveTool(activeId) {
+  document.querySelectorAll('.tools button').forEach(btn =>
+    btn.classList.remove('active')
+  );
+  document.getElementById(activeId).classList.add('active');
+}
+
+function isStylus(e) {
+  return (e.pointerType === 'pen') || (e.touches && e.touches[0]?.touchType === 'stylus');
+}
+
+function getOffset(e) {
+  const rect = canvas.getBoundingClientRect();
+  if (e.touches) {
+    const t = e.touches[0];
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  } else {
+    return { x: e.offsetX, y: e.offsetY };
+  }
+}
+
+function startDraw(e) {
+  if (!isStylus(e)) return;
+  e.preventDefault();
+  const pos = getOffset(e);
+  lastX = pos.x;
+  lastY = pos.y;
+  if (e.pointerId !== undefined) canvas.setPointerCapture(e.pointerId);
+
+  if (mode === 'draw') {
+    drawing = true;
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+  } else if (mode === 'present') {
+    dot.style.left = (pos.x + canvas.offsetLeft - 10) + 'px';
+    dot.style.top = (pos.y + canvas.offsetTop - 10 - scrollOffset) + 'px';
+    dot.style.display = 'block';
+  } else if (mode === 'insert') {
+    insertStartY = pos.y;
+    isInserting = true;
+    insertImageData = ctx.getImageData(0, insertStartY, canvas.width, canvas.height - insertStartY);
+  }
+}
+
+function moveDraw(e) {
+  if (!isStylus(e)) return;
+  e.preventDefault();
+  const pos = getOffset(e);
+
+  if (mode === 'draw' && drawing) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = currentLineWidth;
+    ctx.lineCap = 'round';
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    lastX = pos.x;
+    lastY = pos.y;
+  } else if (mode === 'present') {
+    dot.style.left = (pos.x + canvas.offsetLeft - 10) + 'px';
+    dot.style.top = (pos.y + canvas.offsetTop - 10 - scrollOffset) + 'px';
+  } else if (mode === 'insert' && isInserting) {
+    insertCurrentY = Math.max(pos.y, insertStartY);
+    const gap = insertCurrentY - insertStartY;
+
+    const baseImage = drawHistory.length > 0 ? drawHistory[drawHistory.length - 1] : null;
+    if (baseImage) {
+      ctx.putImageData(baseImage, 0, 0);
+    } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-      // Save as base layer
-      drawHistory.length = 0;
-      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    };
-
-    document.getElementById('scrollUp').addEventListener('click', () => {
-      scrollOffset = Math.max(0, scrollOffset - scrollStep);
-      content.style.transform = `translateY(-${scrollOffset}px)`;
-    });
-
-    document.getElementById('scrollDown').addEventListener('click', () => {
-      const maxScroll = content.scrollHeight - window.innerHeight;
-      scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
-      content.style.transform = `translateY(-${scrollOffset}px)`;
-    });
-
-    document.querySelectorAll('.colors button').forEach(btn => {
-      btn.addEventListener('click', () => color = btn.dataset.color);
-    });
-
-    document.querySelectorAll('.thicknesses button').forEach(btn => {
-      btn.addEventListener('click', () => size = parseInt(btn.dataset.size));
-    });
-
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file || !file.type.startsWith('image/')) return;
-
-      const reader = new FileReader();
-      reader.onload = evt => image.src = evt.target.result;
-      reader.readAsDataURL(file);
-    });
-
-    // Tool switching
-    document.getElementById('drawTool').addEventListener('click', () => {
-      mode = 'draw';
-      setActiveTool('drawTool');
-    });
-
-    document.getElementById('presentTool').addEventListener('click', () => {
-      mode = 'present';
-      setActiveTool('presentTool');
-    });
-
-    document.getElementById('insertTool').addEventListener('click', () => {
-      mode = 'insert';
-      setActiveTool('insertTool');
-    });
-
-    function setActiveTool(activeId) {
-      document.querySelectorAll('.tools button').forEach(btn =>
-        btn.classList.remove('active')
-      );
-      document.getElementById(activeId).classList.add('active');
     }
 
-    function isStylus(e) {
-      return (e.pointerType === 'pen') || (e.touches && e.touches[0]?.touchType === 'stylus');
+    if (gap > 0 && insertImageData) {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, insertStartY, canvas.width, gap);
+      ctx.putImageData(insertImageData, 0, insertStartY + gap);
     }
-
-    function getOffset(e) {
-      const rect = canvas.getBoundingClientRect();
-      if (e.touches) {
-        const t = e.touches[0];
-        return { x: t.clientX - rect.left, y: t.clientY - rect.top };
-      } else {
-        return { x: e.offsetX, y: e.offsetY };
-      }
-    }
-
-    function startDraw(e) {
-      if (!isStylus(e)) return;
-      e.preventDefault();
-      const pos = getOffset(e);
-      lastX = pos.x;
-      lastY = pos.y;
-      if (e.pointerId !== undefined) {
-        canvas.setPointerCapture(e.pointerId);
-      }
-
-      if (mode === 'draw') {
-        drawing = true;
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-      } else if (mode === 'present') {
-        dot.style.left = (pos.x + canvas.offsetLeft - 10) + 'px';
-        dot.style.top = (pos.y + canvas.offsetTop - 10 - scrollOffset) + 'px';
-        dot.style.display = 'block';
-      } else if (mode === 'insert') {
-        insertStartY = pos.y;
-        isInserting = true;
-        insertImageData = ctx.getImageData(0, insertStartY, canvas.width, canvas.height - insertStartY);
-      }
-    }
-
-    function moveDraw(e) {
-      if (!isStylus(e)) return;
-      e.preventDefault();
-      const pos = getOffset(e);
-
-      if (mode === 'draw' && drawing) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = size;
-        ctx.lineCap = 'round';
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-        lastX = pos.x;
-        lastY = pos.y;
-      } else if (mode === 'present') {
-        dot.style.left = (pos.x + canvas.offsetLeft - 10) + 'px';
-        dot.style.top = (pos.y + canvas.offsetTop - 10 - scrollOffset) + 'px';
-      } else if (mode === 'insert' && isInserting) {
-        insertCurrentY = Math.max(pos.y, insertStartY);
-        const gap = insertCurrentY - insertStartY;
-
-        const baseImage = drawHistory.length > 0 ? drawHistory[drawHistory.length - 1] : null;
-        if (baseImage) {
-          ctx.putImageData(baseImage, 0, 0);
-        } else {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-
-        if (gap > 0 && insertImageData) {
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, insertStartY, canvas.width, gap);
-          ctx.putImageData(insertImageData, 0, insertStartY + gap);
-        }
-      }
-    }
+  }
+}
 
 function endDraw(e) {
   if (mode === 'draw' && drawing) {
@@ -390,51 +369,42 @@ function endDraw(e) {
 
     drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 
-    // Generate new image and update <img> src
     const newImageURL = canvas.toDataURL('image/png');
     image.onload = () => {
-      // Clear canvas *after* image is reloaded
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Optional: redraw base layer (if needed for annotation)
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-      // Reset canvas style (helpful if offsets changed)
       canvas.style.top = image.offsetTop + 'px';
-
-      // Restore draw history state (optional)
       drawHistory.length = 0;
       drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     };
     image.src = newImageURL;
 
-    // Switch back to draw mode
     mode = 'draw';
     setActiveTool('drawTool');
   }
 }
 
+undoBtn.addEventListener('click', () => {
+  if (drawHistory.length > 0) {
+    drawHistory.pop();
+    const previous = drawHistory[drawHistory.length - 1];
+    if (previous) {
+      ctx.putImageData(previous, 0, 0);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+});
 
-    undoBtn.addEventListener('click', () => {
-      if (drawHistory.length > 0) {
-        drawHistory.pop();
-        const previous = drawHistory[drawHistory.length - 1];
-        if (previous) {
-          ctx.putImageData(previous, 0, 0);
-        } else {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-      }
-    });
+canvas.addEventListener('pointerdown', startDraw, { passive: false });
+canvas.addEventListener('pointermove', moveDraw, { passive: false });
+canvas.addEventListener('pointerup', endDraw, { passive: false });
+canvas.addEventListener('pointercancel', endDraw, { passive: false });
 
-    canvas.addEventListener('pointerdown', startDraw, { passive: false });
-    canvas.addEventListener('pointermove', moveDraw, { passive: false });
-    canvas.addEventListener('pointerup', endDraw, { passive: false });
-    canvas.addEventListener('pointercancel', endDraw, { passive: false });
+canvas.addEventListener('touchstart', startDraw, { passive: false });
+canvas.addEventListener('touchmove', moveDraw, { passive: false });
+canvas.addEventListener('touchend', endDraw, { passive: false });
+</script>
 
-    canvas.addEventListener('touchstart', startDraw, { passive: false });
-    canvas.addEventListener('touchmove', moveDraw, { passive: false });
-    canvas.addEventListener('touchend', endDraw, { passive: false });
-  </script>
 </body>
 </html>
