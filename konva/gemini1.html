@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>iPad Stylus Annotator</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100vh;
+      user-select: none;
+      touch-action: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      font-family: sans-serif;
+    }
+    .toolbar {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 10;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+    }
+    .nav-buttons {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    button {
+      font-size: 16px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+    .colors button {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid #00000033;
+    }
+    .colors .red { background: red; }
+    .colors .green { background: green; }
+    .colors .blue { background: blue; }
+    .thicknesses button {
+      width: 30px;
+      height: 30px;
+      background: #ddd;
+    }
+    .tools button.active {
+      background: #007bff;
+      color: white;
+    }
+    #scroll-container {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    #content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      transition: transform 0.3s ease-in-out;
+    }
+    #image {
+      width: 100%; /* This is the display width */
+      display: block;
+    }
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      touch-action: none;
+      pointer-events: auto;
+    }
+    #dotIndicator {
+      position: absolute;
+      width: 25px;
+      height: 25px;
+      background: yellow;
+      border: 1px solid black;
+      border-radius: 50%;
+      pointer-events: none;
+      display: none;
+      z-index: 9;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav-buttons">
+    <button id="scrollUp">⬆️</button>
+    <button id="scrollDown">⬇️</button>
+  </div>
+  <div class="toolbar">
+    <input type="file" id="fileInput" accept="image/*" />
+    <div class="tools">
+      <button id="drawTool" class="active">✏️</button>
+      <button id="presentTool">🎯</button>
+      <button id="insertTool">➕</button>
+    </div>
+    <div class="colors">
+      <button class="red" data-color="red"></button>
+      <button class="green" data-color="green"></button>
+      <button class="blue" data-color="blue"></button>
+    </div>
+    <div class="thicknesses">
+      <button data-size="2">1</button>
+      <button data-size="5">2</button>
+      <button data-size="10">3</button>
+    </div>
+    <button id="undoBtn">↩️</button>
+  </div>
+  <div id="scroll-container">
+    <div id="content">
+      <img id="image" src="" />
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+  <div id="dotIndicator"></div>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const image = document.getElementById('image');
+    const content = document.getElementById('content');
+    const fileInput = document.getElementById('fileInput');
+
+    let drawing = false;
+    let lastX = 0, lastY = 0;
+    let color = 'red';
+    let size = 2; // This is a baseline size, will be multiplied by DPI
+    let scrollOffset = 0;
+    const scrollStep = 200;
+    let mode = 'draw';
+    const dot = document.getElementById('dotIndicator');
+    const undoBtn = document.getElementById('undoBtn');
+    const drawHistory = [];
+
+    // Get the device pixel ratio, default to 1 if not available
+    const dpr = window.devicePixelRatio || 1;
+
+    image.onload = () => {
+      // Set canvas's internal dimensions (width/height attributes) to be scaled by DPR
+      canvas.width = image.naturalWidth * dpr;
+      canvas.height = image.naturalHeight * dpr;
+
+      // Set canvas's display dimensions (CSS width/height) to match image's displayed size
+      canvas.style.width = image.clientWidth + 'px';
+      canvas.style.height = image.clientHeight + 'px';
+      canvas.style.top = image.offsetTop + 'px';
+
+      // Scale the context to account for the DPR. All subsequent drawing operations will be scaled.
+      ctx.scale(dpr, dpr);
+
+      // Draw image onto canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear scaled canvas
+      // Draw the image at its natural size, which will then be scaled down by ctx.scale(dpr, dpr)
+      // to fit the CSS size, effectively using more pixels for rendering.
+      ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
+
+      // Save as base layer (after scaling context and drawing image)
+      drawHistory.length = 0;
+      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    };
+
+    document.getElementById('scrollUp').addEventListener('click', () => {
+      scrollOffset = Math.max(0, scrollOffset - scrollStep);
+      content.style.transform = `translateY(-${scrollOffset}px)`;
+    });
+
+    document.getElementById('scrollDown').addEventListener('click', () => {
+      const maxScroll = content.scrollHeight - window.innerHeight;
+      scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
+      content.style.transform = `translateY(-${scrollOffset}px)`;
+    });
+
+    document.querySelectorAll('.colors button').forEach(btn => {
+      btn.addEventListener('click', () => color = btn.dataset.color);
+    });
+
+    document.querySelectorAll('.thicknesses button').forEach(btn => {
+      btn.addEventListener('click', () => size = parseInt(btn.dataset.size));
+    });
+
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = evt => image.src = evt.target.result;
+      reader.readAsDataURL(file);
+    });
+
+    // Tool switching
+    document.getElementById('drawTool').addEventListener('click', () => {
+      mode = 'draw';
+      setActiveTool('drawTool');
+    });
+    document.getElementById('presentTool').addEventListener('click', () => {
+      mode = 'present';
+      setActiveTool('presentTool');
+    });
+    document.getElementById('insertTool').addEventListener('click', () => {
+      mode = 'insert';
+      setActiveTool('insertTool');
+    });
+
+    function setActiveTool(activeId) {
+      document.querySelectorAll('.tools button').forEach(btn =>
+        btn.classList.remove('active')
+      );
+      document.getElementById(activeId).classList.add('active');
+    }
+
+    function isStylus(e) {
+      return (e.pointerType === 'pen') || (e.touches && e.touches[0]?.touchType === 'stylus');
+    }
+
+    function getOffset(e) {
+      const rect = canvas.getBoundingClientRect();
+      let clientX, clientY;
+      if (e.touches) {
+        const t = e.touches[0];
+        clientX = t.clientX;
+        clientY = t.clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      // Return coordinates relative to the canvas's CSS size, which will then be scaled by ctx.scale(dpr, dpr)
+      return { x: (clientX - rect.left), y: (clientY - rect.top) };
+    }
+
+    function startDraw(e) {
+      if (!isStylus(e)) return;
+      e.preventDefault();
+      const pos = getOffset(e);
+      lastX = pos.x;
+      lastY = pos.y;
+      if (e.pointerId !== undefined) {
+        canvas.setPointerCapture(e.pointerId);
+      }
+      if (mode === 'draw') {
+        drawing = true;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+      } else if (mode === 'present') {
+        // Adjust dot position for scroll and canvas offset
+        dot.style.left = (e.clientX - 10) + 'px'; // Use clientX/Y for screen position
+        dot.style.top = (e.clientY - 10) + 'px';
+        dot.style.display = 'block';
+      } else if (mode === 'insert') {
+        insertStartY = pos.y; // This is relative to the canvas's CSS height
+        isInserting = true;
+        // When getting image data for insert, get it from the scaled canvas coordinates
+        insertImageData = ctx.getImageData(0, insertStartY * dpr, canvas.width, (canvas.height / dpr - insertStartY) * dpr);
+      }
+    }
+
+    function moveDraw(e) {
+      if (!isStylus(e)) return;
+      e.preventDefault();
+      const pos = getOffset(e);
+      if (mode === 'draw' && drawing) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size; // This 'size' will be scaled by dpr due to ctx.scale(dpr, dpr)
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round'; // Ensure lineJoin is also round for smoother corners
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        lastX = pos.x;
+        lastY = pos.y;
+      } else if (mode === 'present') {
+        // Adjust dot position for scroll and canvas offset
+        dot.style.left = (e.clientX - 10) + 'px'; // Use clientX/Y for screen position
+        dot.style.top = (e.clientY - 10) + 'px';
+      } else if (mode === 'insert' && isInserting) {
+        insertCurrentY = Math.max(pos.y, insertStartY);
+        const gap = insertCurrentY - insertStartY;
+
+        // Restore the base image from history before drawing the insertion gap
+        if (drawHistory.length > 0) {
+            // Temporarily disable scaling to put the original full-resolution image back
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.putImageData(drawHistory[0], 0, 0); // Put back the initial image (index 0)
+            ctx.scale(dpr, dpr); // Restore scaling
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        if (gap > 0 && insertImageData) {
+            // The fillRect and putImageData operations should also be scaled
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, insertStartY, canvas.width / dpr, gap); // FillRect with unscaled coordinates
+            ctx.putImageData(insertImageData, 0, (insertStartY + gap) * dpr); // PutImageData with scaled Y coordinate
+        }
+      }
+    }
+
+    function endDraw(e) {
+      if (mode === 'draw' && drawing) {
+        drawing = false;
+        // Save the full canvas state (which is already scaled)
+        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      } else if (mode === 'present') {
+        dot.style.display = 'none';
+      } else if (mode === 'insert' && isInserting) {
+        isInserting = false;
+        insertStartY = null;
+        insertCurrentY = null;
+        insertImageData = null;
+        // Save the current state of the canvas, which now includes the inserted space
+        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+
+        // Generate new image from the canvas and update <img> src
+        // To get a high-quality image from the canvas, create a temporary canvas
+        // that matches the original image's natural dimensions, and draw the current
+        // canvas content onto it, without the DPR scaling.
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = image.naturalWidth;
+        tempCanvas.height = Math.max(image.naturalHeight, canvas.height / dpr); // Account for expanded height
+        const tempCtx = tempCanvas.getContext('2d');
+
+        // Draw the current canvas content onto the temporary canvas, scaling down by DPR
+        // This effectively "un-scales" the high-resolution canvas content for the new image.
+        tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        const newImageURL = tempCanvas.toDataURL('image/png');
+
+        image.onload = () => {
+          // Reset canvas dimensions and scaling based on the *new* image's natural size
+          // The image might have a new natural height after insertion
+          canvas.width = image.naturalWidth * dpr;
+          canvas.height = image.naturalHeight * dpr;
+          canvas.style.width = image.clientWidth + 'px';
+          canvas.style.height = image.clientHeight + 'px';
+          canvas.style.top = image.offsetTop + 'px';
+
+          ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scaling again
+          ctx.scale(dpr, dpr); // Apply new scaling
+
+          // Draw the newly loaded image onto the now properly sized and scaled canvas
+          ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
+
+          // Reset history to only the base image, as we've just created a new base image
+          drawHistory.length = 0;
+          drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        };
+        image.src = newImageURL;
+
+        // Switch back to draw mode
+        mode = 'draw';
+        setActiveTool('drawTool');
+      }
+    }
+
+    undoBtn.addEventListener('click', () => {
+      if (drawHistory.length > 1) { // Keep at least the base image in history
+        drawHistory.pop();
+        const previous = drawHistory[drawHistory.length - 1];
+        if (previous) {
+          // Restore the previous image data
+          ctx.putImageData(previous, 0, 0);
+        } else {
+          // This case should ideally not be reached if we always keep the base image
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          // If the image was originally loaded, redraw it as the base layer
+          if (image.src) {
+              ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
+          }
+        }
+      } else if (drawHistory.length === 1) {
+          // If only the base image is left, clear all drawings but keep the image
+          ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to clear effectively
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.scale(dpr, dpr); // Restore scaling
+          if (image.src) {
+              ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
+          }
+      }
+    });
+
+    canvas.addEventListener('pointerdown', startDraw, { passive: false });
+    canvas.addEventListener('pointermove', moveDraw, { passive: false });
+    canvas.addEventListener('pointerup', endDraw, { passive: false });
+    canvas.addEventListener('pointercancel', endDraw, { passive: false });
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', moveDraw, { passive: false });
+    canvas.addEventListener('touchend', endDraw, { passive: false });
+  </script>
+</body>
+</html>
