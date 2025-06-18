@@ -15,25 +15,23 @@ html, body {
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   font-family: sans-serif;
-  /* Material Design often uses a slightly desaturated background for contrast */
-  background-color: #F8F8F8;
 }
+
 .toolbar {
   position: fixed;
   top: 10px;
   right: 10px;
-  /* Use a more subtle background for the toolbar */
-  background: rgba(255, 255, 255, 0.7); /* Slightly more opaque for clarity */
+  background: rgba(255, 255, 255, 0.5);
   padding: 10px;
-  border-radius: 12px; /* Slightly more rounded corners for M3 feel */
+  border-radius: 8px;
   z-index: 10;
   display: flex;
   flex-direction: row;
   gap: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle elevation */
-  backdrop-filter: blur(8px); /* Optional: Frosted glass effect for toolbar */
-  -webkit-backdrop-filter: blur(8px); /* For Safari */
+  flex-wrap: wrap;
+  align-items: center;
 }
+
 .nav-buttons {
   position: fixed;
   top: 10px;
@@ -44,64 +42,85 @@ html, body {
   gap: 10px;
 }
 
-/* --- MODIFIED BUTTON STYLES FOR M3 NO-HOVER --- */
+/* === Base circular button style === */
 button {
-  font-size: 16px;
-  padding: 0; /* Padding is handled by width/height for circular buttons */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   border: none;
-  cursor: pointer;
-
-  width: 44px; /* Slightly larger touch target for M3 */
-  height: 44px; /* Consistent height */
-  border-radius: 50%; /* Makes it a circle */
-
-  /* M3-inspired default "tonal" button style */
-  background-color: rgba(230, 230, 230, 0.8); /* Lighter, subtle semi-transparent background */
-  color: #1F1F1F; /* Darker text for contrast */
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 1px 1px rgba(0,0,0,0.06); /* Subtle, low-elevation shadow */
-
+  background: white;
   display: flex;
-  justify-content: center;
   align-items: center;
-
-  /* No explicit hover, active, or transition for the default state */
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  border: 1px solid black;
 }
 
-/* Tool buttons - active state remains visually distinct */
-.tools button.active {
-  background-color: #006ADC; /* Google Blue */
-  color: white;
-  box-shadow: 0 2px 4px rgba(0, 99, 219, 0.2); /* Slightly more prominent shadow for active */
+button img {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
 }
 
-/* Color buttons - distinct colors, also semi-transparent */
+/* === Color Buttons === */
+.colors {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
 .colors button {
-  width: 36px; /* Slightly smaller for color dots */
-  height: 36px;
-  border: 2px solid rgba(0, 0, 0, 0.1); /* Very subtle border */
-  box-shadow: none; /* No shadow on color dots for flat appearance */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #00000033;
 }
 
-.colors .red { background-color: rgba(220, 50, 50, 0.7); } /* A bit more vibrant but still transparent */
-.colors .green { background-color: rgba(50, 180, 50, 0.7); }
-.colors .blue { background-color: rgba(50, 50, 220, 0.7); }
+.colors .red { background: red; }
+.colors .green { background: green; }
+.colors .blue { background: blue; }
 
-/* Thickness buttons - similar to general buttons */
+/* === Tool Buttons === */
+.tools {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.tools button.active,
+.thicknesses button.active {
+  background: #007bff;
+}
+
+
+/* === Thickness Buttons === */
+.thicknesses {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
 .thicknesses button {
-  width: 44px;
-  height: 44px;
-  background-color: rgba(230, 230, 230, 0.8); /* Consistent with general buttons */
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 1px 1px rgba(0,0,0,0.06);
+  width: 40px;
+  height: 40px;
+  background: transparent;
   font-size: 14px;
+  border: 1px solid black;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-
+/* === Scroll and canvas === */
 #scroll-container {
   width: 100%;
   height: 100%;
   overflow: hidden;
   position: relative;
 }
+
 #content {
   position: absolute;
   top: 0;
@@ -109,10 +128,12 @@ button {
   width: 100%;
   transition: transform 0.3s ease-in-out;
 }
+
 #image {
   width: 100%;
   display: block;
 }
+
 #canvas {
   position: absolute;
   top: 0;
@@ -120,6 +141,8 @@ button {
   touch-action: none;
   pointer-events: auto;
 }
+
+/* === Dot Indicator === */
 #dotIndicator {
   position: absolute;
   width: 25px;
@@ -131,34 +154,36 @@ button {
   display: none;
   z-index: 9;
 }
+
   </style>
 </head>
 <body>
 
-  <div class="nav-buttons">
-    <button id="scrollUp">⬆️</button>
-    <button id="scrollDown">⬇️</button>
-  </div>
+<div class="nav-buttons">
+  <button><img src="up.svg" alt="Up" /></button>
+  <button><img src="down.svg" alt="Down" /></button>
+</div>
 
-  <div class="toolbar">
-    <input type="file" id="fileInput" accept="image/*" />
-    <div class="tools">
-      <button id="drawTool" class="active">✏️</button>
-      <button id="presentTool">🎯</button>
-      <button id="insertTool">➕</button>
-    </div>
-    <div class="colors">
-      <button class="red" data-color="red"></button>
-      <button class="green" data-color="green"></button>
-      <button class="blue" data-color="blue"></button>
-    </div>
-    <div class="thicknesses">
-      <button data-size="2">1</button>
-      <button data-size="5">2</button>
-      <button data-size="10">3</button>
-    </div>
-    <button id="undoBtn">↩️</button>
+<div class="toolbar">
+  <input type="file" id="fileInput" accept="image/*" />
+  <div class="tools">
+    <button id="drawTool" class="active"><img src="draw.svg" alt="Draw" /></button>
+    <button id="presentTool"><img src="present.svg" alt="Present" /></button>
+    <button id="insertTool"><img src="space.svg" alt="Insert" /></button>
   </div>
+  <div class="colors">
+    <button class="red" data-color="red"></button>
+    <button class="green" data-color="green"></button>
+    <button class="blue" data-color="blue"></button>
+  </div>
+  <div class="thicknesses">
+    <button data-size="2" class="active">1</button>
+    <button data-size="5">2</button>
+    <button data-size="10">3</button>
+  </div>
+  <button id="undoBtn"><img src="undo.svg" alt="Undo" /></button>
+</div>
+
 
   <div id="scroll-container">
     <div id="content">
@@ -170,282 +195,246 @@ button {
   <div id="dotIndicator"></div>
 
   <script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const image = document.getElementById('image');
-const content = document.getElementById('content');
-const fileInput = document.getElementById('fileInput');
-let drawing = false;
-let lastX = 0, lastY = 0;
-let color = 'red';
-let size = 2;
-let scrollOffset = 0;
-const scrollStep = 200;
-let mode = 'draw';
-const dot = document.getElementById('dotIndicator');
-const undoBtn = document.getElementById('undoBtn');
-const drawHistory = [];
-// Insert Space state
-let insertStartY = null;
-let insertCurrentY = null;
-let isInserting = false;
-let insertImageData = null;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const image = document.getElementById('image');
+    const content = document.getElementById('content');
+    const fileInput = document.getElementById('fileInput');
+    const thicknessButtons = document.querySelectorAll('.thicknesses button');
 
-// New: Store the device pixel ratio
-const devicePixelRatio = window.devicePixelRatio || 1;
+    thicknessButtons.forEach(button => {
+    button.addEventListener('click', () => {
+    // Remove 'active' from all
+    thicknessButtons.forEach(btn => btn.classList.remove('active'));
 
-image.onload = () => {
-    // Set internal canvas dimensions based on device pixel ratio
-    canvas.width = image.clientWidth * devicePixelRatio;
-    canvas.height = image.clientHeight * devicePixelRatio;
+    // Add 'active' to the clicked one
+    button.classList.add('active');
 
-    // Set CSS dimensions to control the displayed size
-    canvas.style.width = image.clientWidth + 'px';
-    canvas.style.height = image.clientHeight + 'px';
-    canvas.style.top = image.offsetTop + 'px';
-
-    // Scale the drawing context so that subsequent draws are at the higher resolution
-    // This needs to be done once after setting canvas dimensions
-    ctx.scale(devicePixelRatio, devicePixelRatio);
-
-    // Draw image onto canvas
-    // When drawing the image, specify its dimensions in CSS pixels (as it was loaded)
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the scaled canvas
-    ctx.drawImage(image, 0, 0, image.clientWidth, image.clientHeight); // Draw at original client dimensions (CSS pixels)
-
-    // Save as base layer (now at higher resolution)
-    // getImageData naturally captures data at the canvas's internal resolution
-    drawHistory.length = 0;
-    drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-};
-
-document.getElementById('scrollUp').addEventListener('click', () => {
-    scrollOffset = Math.max(0, scrollOffset - scrollStep);
-    content.style.transform = `translateY(-${scrollOffset}px)`;
-});
-document.getElementById('scrollDown').addEventListener('click', () => {
-    const maxScroll = content.scrollHeight - window.innerHeight;
-    scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
-    content.style.transform = `translateY(-${scrollOffset}px)`;
-});
-document.querySelectorAll('.colors button').forEach(btn => {
-    btn.addEventListener('click', () => color = btn.dataset.color);
-});
-document.querySelectorAll('.thicknesses button').forEach(btn => {
-    btn.addEventListener('click', () => size = parseInt(btn.dataset.size));
-});
-fileInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file || !file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = evt => image.src = evt.target.result;
-    reader.readAsDataURL(file);
+    // Optional: Set line thickness based on `data-size`
+    const size = button.getAttribute('data-size');
+    currentLineWidth = parseInt(size); // Example
+  });
 });
 
-// Tool switching
-document.getElementById('drawTool').addEventListener('click', () => {
-    mode = 'draw';
-    setActiveTool('drawTool');
-});
-document.getElementById('presentTool').addEventListener('click', () => {
-    mode = 'present';
-    setActiveTool('presentTool');
-});
-document.getElementById('insertTool').addEventListener('click', () => {
-    mode = 'insert';
-    setActiveTool('insertTool');
-});
 
-function setActiveTool(activeId) {
-    document.querySelectorAll('.tools button').forEach(btn =>
+    let drawing = false;
+    let lastX = 0, lastY = 0;
+    let color = 'red';
+    let size = 2;
+    let scrollOffset = 0;
+    const scrollStep = 200;
+    let mode = 'draw';
+
+    const dot = document.getElementById('dotIndicator');
+    const undoBtn = document.getElementById('undoBtn');
+    const drawHistory = [];
+
+    // Insert Space state
+    let insertStartY = null;
+    let insertCurrentY = null;
+    let isInserting = false;
+    let insertImageData = null;
+
+    image.onload = () => {
+      canvas.width = image.clientWidth;
+      canvas.height = image.clientHeight;
+      canvas.style.width = canvas.width + 'px';
+      canvas.style.height = canvas.height + 'px';
+      canvas.style.top = image.offsetTop + 'px';
+
+      // Draw image onto canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      // Save as base layer
+      drawHistory.length = 0;
+      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    };
+
+    document.getElementById('scrollUp').addEventListener('click', () => {
+      scrollOffset = Math.max(0, scrollOffset - scrollStep);
+      content.style.transform = `translateY(-${scrollOffset}px)`;
+    });
+
+    document.getElementById('scrollDown').addEventListener('click', () => {
+      const maxScroll = content.scrollHeight - window.innerHeight;
+      scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
+      content.style.transform = `translateY(-${scrollOffset}px)`;
+    });
+
+    document.querySelectorAll('.colors button').forEach(btn => {
+      btn.addEventListener('click', () => color = btn.dataset.color);
+    });
+
+    document.querySelectorAll('.thicknesses button').forEach(btn => {
+      btn.addEventListener('click', () => size = parseInt(btn.dataset.size));
+    });
+
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+
+      const reader = new FileReader();
+      reader.onload = evt => image.src = evt.target.result;
+      reader.readAsDataURL(file);
+    });
+
+    // Tool switching
+    document.getElementById('drawTool').addEventListener('click', () => {
+      mode = 'draw';
+      setActiveTool('drawTool');
+    });
+
+    document.getElementById('presentTool').addEventListener('click', () => {
+      mode = 'present';
+      setActiveTool('presentTool');
+    });
+
+    document.getElementById('insertTool').addEventListener('click', () => {
+      mode = 'insert';
+      setActiveTool('insertTool');
+    });
+
+    function setActiveTool(activeId) {
+      document.querySelectorAll('.tools button').forEach(btn =>
         btn.classList.remove('active')
-    );
-    document.getElementById(activeId).classList.add('active');
-}
-
-function isStylus(e) {
-    return (e.pointerType === 'pen') || (e.touches && e.touches[0]?.touchType === 'stylus');
-}
-
-// MODIFIED: getOffset now returns coordinates in canvas *device pixels*
-function getOffset(e) {
-    const rect = canvas.getBoundingClientRect();
-    let x, y;
-    if (e.touches) {
-        const t = e.touches[0];
-        x = t.clientX - rect.left;
-        y = t.clientY - rect.top;
-    } else {
-        x = e.offsetX; // offsetX/offsetY are usually relative to padding-box of target
-        y = e.offsetY;
+      );
+      document.getElementById(activeId).classList.add('active');
     }
-    // Scale CSS pixel coordinates to canvas device pixels
-    return { x: x * devicePixelRatio, y: y * devicePixelRatio };
-}
 
-// NEW: Helper to get coordinates in CSS pixels for UI elements (like dot indicator)
-function getOffsetCSS(e) {
-    const rect = canvas.getBoundingClientRect();
-    if (e.touches) {
+    function isStylus(e) {
+      return (e.pointerType === 'pen') || (e.touches && e.touches[0]?.touchType === 'stylus');
+    }
+
+    function getOffset(e) {
+      const rect = canvas.getBoundingClientRect();
+      if (e.touches) {
         const t = e.touches[0];
         return { x: t.clientX - rect.left, y: t.clientY - rect.top };
-    } else {
+      } else {
         return { x: e.offsetX, y: e.offsetY };
+      }
     }
-}
 
-
-function startDraw(e) {
-    if (!isStylus(e)) return;
-    e.preventDefault();
-
-    const pos = getOffset(e); // Device pixel coordinates for drawing/canvas ops
-    const posCSS = getOffsetCSS(e); // CSS pixel coordinates for UI elements
-
-    lastX = pos.x;
-    lastY = pos.y;
-    if (e.pointerId !== undefined) {
+    function startDraw(e) {
+      if (!isStylus(e)) return;
+      e.preventDefault();
+      const pos = getOffset(e);
+      lastX = pos.x;
+      lastY = pos.y;
+      if (e.pointerId !== undefined) {
         canvas.setPointerCapture(e.pointerId);
-    }
+      }
 
-    if (mode === 'draw') {
+      if (mode === 'draw') {
         drawing = true;
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
-    } else if (mode === 'present') {
-        dot.style.left = (posCSS.x + canvas.offsetLeft - 10) + 'px'; // Use CSS pixels
-        dot.style.top = (posCSS.y + canvas.offsetTop - 10 - scrollOffset) + 'px'; // Use CSS pixels
+      } else if (mode === 'present') {
+        dot.style.left = (pos.x + canvas.offsetLeft - 10) + 'px';
+        dot.style.top = (pos.y + canvas.offsetTop - 10 - scrollOffset) + 'px';
         dot.style.display = 'block';
-    } else if (mode === 'insert') {
-        // insertStartY should be in device pixels for getImageData
+      } else if (mode === 'insert') {
         insertStartY = pos.y;
         isInserting = true;
-        // getImageData works with device pixels
         insertImageData = ctx.getImageData(0, insertStartY, canvas.width, canvas.height - insertStartY);
+      }
     }
-}
 
-function moveDraw(e) {
-    if (!isStylus(e)) return;
-    e.preventDefault();
+    function moveDraw(e) {
+      if (!isStylus(e)) return;
+      e.preventDefault();
+      const pos = getOffset(e);
 
-    const pos = getOffset(e); // Device pixel coordinates
-    const posCSS = getOffsetCSS(e); // CSS pixel coordinates
-
-    if (mode === 'draw' && drawing) {
+      if (mode === 'draw' && drawing) {
         ctx.strokeStyle = color;
-        // Line width should also be scaled
-        ctx.lineWidth = size * devicePixelRatio;
+        ctx.lineWidth = size;
         ctx.lineCap = 'round';
-        ctx.lineJoin = 'round'; // ADDED: Smooth line joins
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
         lastX = pos.x;
         lastY = pos.y;
-    } else if (mode === 'present') {
-        dot.style.left = (posCSS.x + canvas.offsetLeft - 10) + 'px'; // Use CSS pixels
-        dot.style.top = (posCSS.y + canvas.offsetTop - 10 - scrollOffset) + 'px'; // Use CSS pixels
-    } else if (mode === 'insert' && isInserting) {
-        // insertCurrentY should be in device pixels
+      } else if (mode === 'present') {
+        dot.style.left = (pos.x + canvas.offsetLeft - 10) + 'px';
+        dot.style.top = (pos.y + canvas.offsetTop - 10 - scrollOffset) + 'px';
+      } else if (mode === 'insert' && isInserting) {
         insertCurrentY = Math.max(pos.y, insertStartY);
-        const gap = insertCurrentY - insertStartY; // Gap is in device pixels
+        const gap = insertCurrentY - insertStartY;
 
-        // When restoring from history, putImageData works with device pixels
-        // Restore the full base layer for clean redraw
         const baseImage = drawHistory.length > 0 ? drawHistory[drawHistory.length - 1] : null;
         if (baseImage) {
-            ctx.putImageData(baseImage, 0, 0);
+          ctx.putImageData(baseImage, 0, 0);
         } else {
-            // Clear the entire canvas if no base image (handles scaled canvas)
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
         if (gap > 0 && insertImageData) {
-            // Fill rectangle in device pixels
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, insertStartY, canvas.width, gap);
-            // putImageData works with device pixels
-            ctx.putImageData(insertImageData, 0, insertStartY + gap);
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, insertStartY, canvas.width, gap);
+          ctx.putImageData(insertImageData, 0, insertStartY + gap);
         }
+      }
     }
-}
 
 function endDraw(e) {
-    if (mode === 'draw' && drawing) {
-        drawing = false;
-        // getImageData captures the current state at device pixel resolution
-        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    } else if (mode === 'present') {
-        dot.style.display = 'none';
-    } else if (mode === 'insert' && isInserting) {
-        isInserting = false;
-        insertStartY = null;
-        insertCurrentY = null;
-        insertImageData = null; // Clear old image data
+  if (mode === 'draw' && drawing) {
+    drawing = false;
+    drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+  } else if (mode === 'present') {
+    dot.style.display = 'none';
+  } else if (mode === 'insert' && isInserting) {
+    isInserting = false;
+    insertStartY = null;
+    insertCurrentY = null;
+    insertImageData = null;
 
-        // Save the final state after insertion (device pixels)
-        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 
-        // Generate new image and update <img> src
-        // toDataURL will produce an image at the canvas's internal (high) resolution
-        const newImageURL = canvas.toDataURL('image/png');
+    // Generate new image and update <img> src
+    const newImageURL = canvas.toDataURL('image/png');
+    image.onload = () => {
+      // Clear canvas *after* image is reloaded
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // This onload fires AFTER the image is loaded.
-        image.onload = () => {
-            // Re-initialize canvas dimensions and context scaling
-            // This is crucial because setting image.src can sometimes reset canvas state
-            canvas.width = image.clientWidth * devicePixelRatio;
-            canvas.height = image.clientHeight * devicePixelRatio;
-            canvas.style.width = image.clientWidth + 'px';
-            canvas.style.height = image.clientHeight + 'px';
-            canvas.style.top = image.offsetTop + 'px';
-            ctx.scale(devicePixelRatio, devicePixelRatio); // Re-apply scaling
+      // Optional: redraw base layer (if needed for annotation)
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-            // Clear canvas *after* image is reloaded
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Draw the new base image onto the scaled canvas
-            ctx.drawImage(image, 0, 0, image.clientWidth, image.clientHeight);
+      // Reset canvas style (helpful if offsets changed)
+      canvas.style.top = image.offsetTop + 'px';
 
-            // Clear and re-add the base image to history with the new scaled state
-            drawHistory.length = 0;
-            drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-        };
-        image.src = newImageURL; // This triggers the image.onload above
+      // Restore draw history state (optional)
+      drawHistory.length = 0;
+      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    };
+    image.src = newImageURL;
 
-        // Switch back to draw mode
-        mode = 'draw';
-        setActiveTool('drawTool');
-    }
+    // Switch back to draw mode
+    mode = 'draw';
+    setActiveTool('drawTool');
+  }
 }
 
-undoBtn.addEventListener('click', () => {
-    if (drawHistory.length > 1) { // Keep at least the base image
+
+    undoBtn.addEventListener('click', () => {
+      if (drawHistory.length > 0) {
         drawHistory.pop();
         const previous = drawHistory[drawHistory.length - 1];
         if (previous) {
-            // putImageData works with device pixels
-            ctx.putImageData(previous, 0, 0);
+          ctx.putImageData(previous, 0, 0);
         } else {
-            // Clear the entire canvas if no previous (handles scaled canvas)
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
-    } else if (drawHistory.length === 1) { // If only the base image is left, clear annotations
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(image, 0, 0, image.clientWidth, image.clientHeight); // Redraw just the base image
-        // Re-save this as the only history state
-        drawHistory.length = 0;
-        drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    }
-});
+      }
+    });
 
-canvas.addEventListener('pointerdown', startDraw, { passive: false });
-canvas.addEventListener('pointermove', moveDraw, { passive: false });
-canvas.addEventListener('pointerup', endDraw, { passive: false });
-canvas.addEventListener('pointercancel', endDraw, { passive: false });
-canvas.addEventListener('touchstart', startDraw, { passive: false });
-canvas.addEventListener('touchmove', moveDraw, { passive: false });
-canvas.addEventListener('touchend', endDraw, { passive: false });
+    canvas.addEventListener('pointerdown', startDraw, { passive: false });
+    canvas.addEventListener('pointermove', moveDraw, { passive: false });
+    canvas.addEventListener('pointerup', endDraw, { passive: false });
+    canvas.addEventListener('pointercancel', endDraw, { passive: false });
 
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', moveDraw, { passive: false });
+    canvas.addEventListener('touchend', endDraw, { passive: false });
   </script>
 </body>
 </html>
