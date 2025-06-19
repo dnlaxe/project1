@@ -233,6 +233,10 @@ let holdTimer = null;
 let holdPosition = null;
 let HOLD_TIME = 500; // ms
 let HOLD_THRESHOLD = 5; // pixels of wiggle room
+let straightenCandidate = false;
+let straightenStartTime = 0;
+let straightenTimer = null;
+
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -360,8 +364,10 @@ function startDraw(e) {
   const pos = getOffset(e);
   lastX = pos.x;
   lastY = pos.y;
-  holdPosition = { x: pos.x, y: pos.y };
   strokePoints = [pos];
+  straightenCandidate = false;
+  straightenStartTime = 0;
+  clearTimeout(straightenTimer);
 
   if (e.pointerId !== undefined) canvas.setPointerCapture(e.pointerId);
 
@@ -388,6 +394,38 @@ function moveDraw(e) {
   const pos = getOffset(e);
 
   if (mode === 'draw' && drawing) {
+    const dx = pos.x - lastX;
+    const dy = pos.y - lastY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 2 && !straightenCandidate) {
+      // Stylus is very still — start straightening candidate timer
+      straightenCandidate = true;
+      straightenStartTime = Date.now();
+
+      straightenTimer = setTimeout(() => {
+        if (straightenCandidate && strokePoints.length > 1) {
+          // Restore last image state
+          const lastImage = drawHistory[drawHistory.length - 1];
+          if (lastImage) ctx.putImageData(lastImage, 0, 0);
+
+          const start = strokePoints[0];
+          const end = strokePoints[strokePoints.length - 1];
+          ctx.strokeStyle = color;
+          ctx.lineWidth = currentLineWidth;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(start.x, start.y);
+          ctx.lineTo(end.x, end.y);
+          ctx.stroke();
+        }
+      }, HOLD_TIME);
+    } else if (dist >= 2) {
+      // Moved too much — cancel straightening
+      straightenCandidate = false;
+      clearTimeout(straightenTimer);
+    }
+
     strokePoints.push(pos);
     ctx.strokeStyle = color;
     ctx.lineWidth = currentLineWidth;
@@ -398,9 +436,11 @@ function moveDraw(e) {
     ctx.stroke();
     lastX = pos.x;
     lastY = pos.y;
+
   } else if (mode === 'present') {
     dot.style.left = (pos.x + canvas.offsetLeft - 20) + 'px';
     dot.style.top = (pos.y + canvas.offsetTop - 20 - scrollOffset) + 'px';
+
   } else if (mode === 'insert' && isInserting) {
     insertCurrentY = Math.max(pos.y, insertStartY);
     const gap = insertCurrentY - insertStartY;
@@ -422,36 +462,11 @@ function moveDraw(e) {
 
 
 function endDraw(e) {
+  clearTimeout(straightenTimer);
+
   if (mode === 'draw' && drawing) {
     drawing = false;
-
-    const endPoint = strokePoints[strokePoints.length - 1];
-    holdTimer = setTimeout(() => {
-      const dx = endPoint.x - holdPosition.x;
-      const dy = endPoint.y - holdPosition.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < HOLD_THRESHOLD && strokePoints.length > 1) {
-        const start = strokePoints[0];
-        const end = strokePoints[strokePoints.length - 1];
-
-        // Restore last clean image
-        const last = drawHistory[drawHistory.length - 1];
-        if (last) ctx.putImageData(last, 0, 0);
-
-        // Draw straight line
-        ctx.strokeStyle = color;
-        ctx.lineWidth = currentLineWidth;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(end.x, end.y);
-        ctx.stroke();
-      }
-
-      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    }, HOLD_TIME);
-
+    drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
   } else if (mode === 'present') {
     dot.style.display = 'none';
   } else if (mode === 'insert' && isInserting) {
