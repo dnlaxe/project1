@@ -348,8 +348,10 @@ function getOffset(e) {
 }
 
 function startDraw(e) {
+  e.preventDefault(); // Always prevent default to block scrolling
+
   if (!isStylus(e)) return;
-  e.preventDefault();
+
   const pos = getOffset(e);
   lastX = pos.x;
   lastY = pos.y;
@@ -370,9 +372,12 @@ function startDraw(e) {
   }
 }
 
+
 function moveDraw(e) {
+  e.preventDefault(); // Always block scrolling
+
   if (!isStylus(e)) return;
-  e.preventDefault();
+
   const pos = getOffset(e);
 
   if (mode === 'draw' && drawing) {
@@ -409,6 +414,10 @@ function moveDraw(e) {
 }
 
 function endDraw(e) {
+  e.preventDefault(); // Always block default
+
+  if (!isStylus(e)) return;
+
   if (mode === 'draw' && drawing) {
     drawing = false;
     drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
@@ -419,31 +428,23 @@ function endDraw(e) {
 
     const gap = insertCurrentY - insertStartY;
     if (gap > 0 && insertImageData) {
-      // Increase canvas height
       const oldHeight = canvas.height;
       const newHeight = oldHeight + gap;
       canvas.height = newHeight;
       canvas.style.height = newHeight + 'px';
-      image.style.height = newHeight + 'px'; // Stretch image placeholder too
-      content.style.height = newHeight + 'px'; // Ensure scroll container sees the height
+      image.style.height = newHeight + 'px';
+      content.style.height = newHeight + 'px';
 
-      // Create a temp canvas to recompose full image
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
       tempCanvas.height = newHeight;
       const tempCtx = tempCanvas.getContext('2d');
 
-      // Draw everything above the insert point
       tempCtx.putImageData(drawHistory[drawHistory.length - 1], 0, 0);
-
-      // Fill gap with white
       tempCtx.fillStyle = 'white';
       tempCtx.fillRect(0, insertStartY, canvas.width, gap);
-
-      // Draw pushed-down content
       tempCtx.putImageData(insertImageData, 0, insertStartY + gap);
 
-      // Draw temp canvas back to the main canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(tempCanvas, 0, 0);
 
@@ -458,6 +459,7 @@ function endDraw(e) {
     setActiveTool('drawTool');
   }
 }
+
 
 undoBtn.addEventListener('click', () => {
   if (drawHistory.length > 0) {
