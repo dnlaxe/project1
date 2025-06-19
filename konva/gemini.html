@@ -277,13 +277,13 @@ image.onload = () => {
 
 document.getElementById('scrollUp')?.addEventListener('click', () => {
   scrollOffset = Math.max(0, scrollOffset - scrollStep);
-  content.style.transform = translateY(-${scrollOffset}px);
+  content.style.transform = `translateY(-${scrollOffset}px)`;
 });
 
 document.getElementById('scrollDown')?.addEventListener('click', () => {
   const maxScroll = content.scrollHeight - window.innerHeight;
   scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
-  content.style.transform = translateY(-${scrollOffset}px);
+  content.style.transform = `translateY(-${scrollOffset}px)`;
 });
 
 document.querySelectorAll('.colors button').forEach(btn => {
