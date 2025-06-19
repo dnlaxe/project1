@@ -225,8 +225,13 @@ button img {
   <input type="file" id="modalFileInput" accept="image/*" style="margin-top: 10px;" />
 </div>
 
-
 <script>
+
+function blurActiveElement() {
+  if (document.activeElement && typeof document.activeElement.blur === 'function') {
+    document.activeElement.blur();
+  }
+}
   
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -240,6 +245,7 @@ thicknessButtons.forEach(button => {
     thicknessButtons.forEach(btn => btn.classList.remove('active'));
     button.classList.add('active');
     currentLineWidth = parseInt(button.getAttribute('data-size'));
+    blurActiveElement();
   });
 });
 
@@ -297,9 +303,10 @@ document.querySelectorAll('.colors button').forEach(btn => {
 
     // Remove active from present and insert tools
     document.querySelectorAll('.tools button').forEach(toolBtn => toolBtn.classList.remove('active'));
+
+    blurActiveElement();
   });
 });
-
 
 const modal = document.getElementById('fileModal');
 const modalFileInput = document.getElementById('modalFileInput');
@@ -316,14 +323,15 @@ modalFileInput.addEventListener('change', e => {
   reader.readAsDataURL(file);
 });
 
-
 document.getElementById('presentTool').addEventListener('click', () => {
   mode = 'present';
   setActiveTool('presentTool');
+  blurActiveElement();
 });
 document.getElementById('insertTool').addEventListener('click', () => {
   mode = 'insert';
   setActiveTool('insertTool');
+  blurActiveElement();
 });
 
 function setActiveTool(activeId) {
@@ -348,10 +356,8 @@ function getOffset(e) {
 }
 
 function startDraw(e) {
-  e.preventDefault(); // Always prevent default to block scrolling
-
   if (!isStylus(e)) return;
-
+  e.preventDefault();
   const pos = getOffset(e);
   lastX = pos.x;
   lastY = pos.y;
@@ -372,12 +378,9 @@ function startDraw(e) {
   }
 }
 
-
 function moveDraw(e) {
-  e.preventDefault(); // Always block scrolling
-
   if (!isStylus(e)) return;
-
+  e.preventDefault();
   const pos = getOffset(e);
 
   if (mode === 'draw' && drawing) {
@@ -414,10 +417,6 @@ function moveDraw(e) {
 }
 
 function endDraw(e) {
-  e.preventDefault(); // Always block default
-
-  if (!isStylus(e)) return;
-
   if (mode === 'draw' && drawing) {
     drawing = false;
     drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
@@ -428,23 +427,31 @@ function endDraw(e) {
 
     const gap = insertCurrentY - insertStartY;
     if (gap > 0 && insertImageData) {
+      // Increase canvas height
       const oldHeight = canvas.height;
       const newHeight = oldHeight + gap;
       canvas.height = newHeight;
       canvas.style.height = newHeight + 'px';
-      image.style.height = newHeight + 'px';
-      content.style.height = newHeight + 'px';
+      image.style.height = newHeight + 'px'; // Stretch image placeholder too
+      content.style.height = newHeight + 'px'; // Ensure scroll container sees the height
 
+      // Create a temp canvas to recompose full image
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
       tempCanvas.height = newHeight;
       const tempCtx = tempCanvas.getContext('2d');
 
+      // Draw everything above the insert point
       tempCtx.putImageData(drawHistory[drawHistory.length - 1], 0, 0);
+
+      // Fill gap with white
       tempCtx.fillStyle = 'white';
       tempCtx.fillRect(0, insertStartY, canvas.width, gap);
+
+      // Draw pushed-down content
       tempCtx.putImageData(insertImageData, 0, insertStartY + gap);
 
+      // Draw temp canvas back to the main canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(tempCanvas, 0, 0);
 
@@ -459,7 +466,6 @@ function endDraw(e) {
     setActiveTool('drawTool');
   }
 }
-
 
 undoBtn.addEventListener('click', () => {
   if (drawHistory.length > 0) {
@@ -481,7 +487,9 @@ canvas.addEventListener('pointercancel', endDraw, { passive: false });
 canvas.addEventListener('touchstart', startDraw, { passive: false });
 canvas.addEventListener('touchmove', moveDraw, { passive: false });
 canvas.addEventListener('touchend', endDraw, { passive: false });
+
 </script>
+
 
 </body>
 </html>
