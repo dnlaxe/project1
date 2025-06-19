@@ -114,7 +114,7 @@ button img {
 #scroll-container {
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: auto; /* changed from hidden */
   position: relative;
 }
 
@@ -416,21 +416,43 @@ function endDraw(e) {
     dot.style.display = 'none';
   } else if (mode === 'insert' && isInserting) {
     isInserting = false;
+
+    const gap = insertCurrentY - insertStartY;
+    if (gap > 0 && insertImageData) {
+      // Increase canvas height
+      const oldHeight = canvas.height;
+      const newHeight = oldHeight + gap;
+      canvas.height = newHeight;
+      canvas.style.height = newHeight + 'px';
+      image.style.height = newHeight + 'px'; // Stretch image placeholder too
+      content.style.height = newHeight + 'px'; // Ensure scroll container sees the height
+
+      // Create a temp canvas to recompose full image
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = newHeight;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      // Draw everything above the insert point
+      tempCtx.putImageData(drawHistory[drawHistory.length - 1], 0, 0);
+
+      // Fill gap with white
+      tempCtx.fillStyle = 'white';
+      tempCtx.fillRect(0, insertStartY, canvas.width, gap);
+
+      // Draw pushed-down content
+      tempCtx.putImageData(insertImageData, 0, insertStartY + gap);
+
+      // Draw temp canvas back to the main canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(tempCanvas, 0, 0);
+
+      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+
     insertStartY = null;
     insertCurrentY = null;
     insertImageData = null;
-
-    drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-
-    const newImageURL = canvas.toDataURL('image/png');
-    image.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-      canvas.style.top = image.offsetTop + 'px';
-      drawHistory.length = 0;
-      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    };
-    image.src = newImageURL;
 
     mode = 'draw';
     setActiveTool('drawTool');
