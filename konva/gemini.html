@@ -227,6 +227,13 @@ button img {
 
 
 <script>
+
+let strokePoints = [];
+let holdTimer = null;
+let holdPosition = null;
+let HOLD_TIME = 500; // ms
+let HOLD_THRESHOLD = 5; // pixels of wiggle room
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const image = document.getElementById('image');
@@ -349,9 +356,13 @@ function getOffset(e) {
 function startDraw(e) {
   if (!isStylus(e)) return;
   e.preventDefault();
+
   const pos = getOffset(e);
   lastX = pos.x;
   lastY = pos.y;
+  holdPosition = { x: pos.x, y: pos.y };
+  strokePoints = [pos];
+
   if (e.pointerId !== undefined) canvas.setPointerCapture(e.pointerId);
 
   if (mode === 'draw') {
@@ -369,12 +380,15 @@ function startDraw(e) {
   }
 }
 
+
 function moveDraw(e) {
   if (!isStylus(e)) return;
   e.preventDefault();
+
   const pos = getOffset(e);
 
   if (mode === 'draw' && drawing) {
+    strokePoints.push(pos);
     ctx.strokeStyle = color;
     ctx.lineWidth = currentLineWidth;
     ctx.lineCap = 'round';
@@ -384,7 +398,6 @@ function moveDraw(e) {
     ctx.stroke();
     lastX = pos.x;
     lastY = pos.y;
-
   } else if (mode === 'present') {
     dot.style.left = (pos.x + canvas.offsetLeft - 20) + 'px';
     dot.style.top = (pos.y + canvas.offsetTop - 20 - scrollOffset) + 'px';
@@ -407,10 +420,38 @@ function moveDraw(e) {
   }
 }
 
+
 function endDraw(e) {
   if (mode === 'draw' && drawing) {
     drawing = false;
-    drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+
+    const endPoint = strokePoints[strokePoints.length - 1];
+    holdTimer = setTimeout(() => {
+      const dx = endPoint.x - holdPosition.x;
+      const dy = endPoint.y - holdPosition.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < HOLD_THRESHOLD && strokePoints.length > 1) {
+        const start = strokePoints[0];
+        const end = strokePoints[strokePoints.length - 1];
+
+        // Restore last clean image
+        const last = drawHistory[drawHistory.length - 1];
+        if (last) ctx.putImageData(last, 0, 0);
+
+        // Draw straight line
+        ctx.strokeStyle = color;
+        ctx.lineWidth = currentLineWidth;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+      }
+
+      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }, HOLD_TIME);
+
   } else if (mode === 'present') {
     dot.style.display = 'none';
   } else if (mode === 'insert' && isInserting) {
@@ -435,6 +476,7 @@ function endDraw(e) {
     setActiveTool('drawTool');
   }
 }
+
 
 undoBtn.addEventListener('click', () => {
   if (drawHistory.length > 0) {
