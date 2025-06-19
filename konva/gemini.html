@@ -62,6 +62,10 @@ button img {
   pointer-events: none;
 }
 
+button.active {
+  background: #ffee00;
+}
+
 .colors {
   display: flex;
   flex-direction: row;
@@ -114,7 +118,7 @@ button img {
 #scroll-container {
   width: 100%;
   height: 100%;
-  overflow: auto; /* changed from hidden */
+  overflow: auto;
   position: relative;
 }
 
@@ -139,7 +143,7 @@ button img {
   pointer-events: auto;
 }
 
-/* === Pointer Indicator as Image === */
+/* Pointer indicator */
 #dotIndicator {
   position: absolute;
   width: 40px;
@@ -170,13 +174,38 @@ button img {
   height: 18px;
 }
 
+#fileModal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  flex-direction: column;
+  color: white;
+  font-size: 18px;
+  text-align: center;
+}
+
+
   </style>
 </head>
 <body>
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>iPad Stylus Annotator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
 <div class="nav-buttons">
-  <button id="scrollUp"><img src="up.svg" alt="Up" /></button>
-  <button id="scrollDown"><img src="down.svg" alt="Down" /></button>
+  <button id="scrollToggle"><img src="scroll.svg" alt="Scroll Mode" /></button>
 </div>
 
 <div class="toolbar">
@@ -185,7 +214,7 @@ button img {
     <button id="insertTool"><img src="space.svg" alt="Insert" /></button>
   </div>
   <div class="colors">
-    <button class="red" data-color="rgb(226, 79, 79)"><img src="draw.svg" alt="Draw Red" /></button>
+    <button class="red active" data-color="rgb(226, 79, 79)"><img src="draw.svg" alt="Draw Red" /></button>
     <button class="green" data-color="rgb(74, 199, 74)"><img src="draw.svg" alt="Draw Green" /></button>
     <button class="blue" data-color="rgb(46, 96, 190)"><img src="draw.svg" alt="Draw Blue" /></button>
   </div>
@@ -204,62 +233,40 @@ button img {
   </div>
 </div>
 
-<!-- Replaced dot with image -->
 <img id="dotIndicator" src="present.svg" alt="Pointer" />
 
-<div id="fileModal" style="
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  flex-direction: column;
-  color: white;
-  font-size: 18px;
-  text-align: center;
-">
+<div id="fileModal">
   <p>Please select an image to start annotating:</p>
   <input type="file" id="modalFileInput" accept="image/*" style="margin-top: 10px;" />
 </div>
 
-<script>
+<script src="script.js"></script>
+</body>
+</html>
 
-function blurActiveElement() {
-  if (document.activeElement && typeof document.activeElement.blur === 'function') {
-    document.activeElement.blur();
-  }
-}
+
+<script>
   
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const image = document.getElementById('image');
 const content = document.getElementById('content');
-const fileInput = document.getElementById('fileInput');
+const modal = document.getElementById('fileModal');
+const modalFileInput = document.getElementById('modalFileInput');
 const thicknessButtons = document.querySelectorAll('.thicknesses button');
-
-thicknessButtons.forEach(button => {
-  button.addEventListener('click', () => {
-    thicknessButtons.forEach(btn => btn.classList.remove('active'));
-    button.classList.add('active');
-    currentLineWidth = parseInt(button.getAttribute('data-size'));
-    blurActiveElement();
-  });
-});
+const colorButtons = document.querySelectorAll('.colors button');
+const scrollToggle = document.getElementById('scrollToggle');
+const dot = document.getElementById('dotIndicator');
+const undoBtn = document.getElementById('undoBtn');
 
 let drawing = false;
 let lastX = 0, lastY = 0;
-let color = 'red';
-let size = 2;
-let scrollOffset = 0;
-const scrollStep = 200;
-let mode = 'draw';
+let color = 'rgb(226, 79, 79)';
 let currentLineWidth = 2;
-
-const dot = document.getElementById('dotIndicator');
-const undoBtn = document.getElementById('undoBtn');
+let scrollOffset = 0;
+let scrollMode = false;
+let lastScrollY = 0;
+let mode = 'draw';
 const drawHistory = [];
 
 let insertStartY = null;
@@ -281,36 +288,6 @@ image.onload = () => {
   drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 };
 
-document.getElementById('scrollUp')?.addEventListener('click', () => {
-  scrollOffset = Math.max(0, scrollOffset - scrollStep);
-  content.style.transform = `translateY(-${scrollOffset}px)`;
-});
-
-document.getElementById('scrollDown')?.addEventListener('click', () => {
-  const maxScroll = content.scrollHeight - window.innerHeight;
-  scrollOffset = Math.min(maxScroll, scrollOffset + scrollStep);
-  content.style.transform = `translateY(-${scrollOffset}px)`;
-});
-
-document.querySelectorAll('.colors button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    color = btn.dataset.color;
-    mode = 'draw';
-
-    // Update color active state
-    document.querySelectorAll('.colors button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    // Remove active from present and insert tools
-    document.querySelectorAll('.tools button').forEach(toolBtn => toolBtn.classList.remove('active'));
-
-    blurActiveElement();
-  });
-});
-
-const modal = document.getElementById('fileModal');
-const modalFileInput = document.getElementById('modalFileInput');
-
 modalFileInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file || !file.type.startsWith('image/')) return;
@@ -318,20 +295,40 @@ modalFileInput.addEventListener('change', e => {
   const reader = new FileReader();
   reader.onload = evt => {
     image.src = evt.target.result;
-    modal.style.display = 'none'; // Hide the modal after loading
+    modal.style.display = 'none';
   };
   reader.readAsDataURL(file);
+});
+
+colorButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    colorButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    color = btn.dataset.color;
+    mode = 'draw';
+    document.querySelectorAll('.tools button').forEach(toolBtn => toolBtn.classList.remove('active'));
+  });
+});
+
+thicknessButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    thicknessButtons.forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+    currentLineWidth = parseInt(button.getAttribute('data-size'));
+  });
 });
 
 document.getElementById('presentTool').addEventListener('click', () => {
   mode = 'present';
   setActiveTool('presentTool');
-  blurActiveElement();
 });
 document.getElementById('insertTool').addEventListener('click', () => {
   mode = 'insert';
   setActiveTool('insertTool');
-  blurActiveElement();
+});
+scrollToggle.addEventListener('click', () => {
+  scrollMode = true;
+  scrollToggle.classList.add('active');
 });
 
 function setActiveTool(activeId) {
@@ -363,7 +360,9 @@ function startDraw(e) {
   lastY = pos.y;
   if (e.pointerId !== undefined) canvas.setPointerCapture(e.pointerId);
 
-  if (mode === 'draw') {
+  if (scrollMode) {
+    lastScrollY = e.clientY;
+  } else if (mode === 'draw') {
     drawing = true;
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
@@ -383,6 +382,14 @@ function moveDraw(e) {
   e.preventDefault();
   const pos = getOffset(e);
 
+  if (scrollMode) {
+    const deltaY = lastScrollY - e.clientY;
+    scrollOffset = Math.max(0, scrollOffset + deltaY);
+    content.style.transform = `translateY(-${scrollOffset}px)`;
+    lastScrollY = e.clientY;
+    return;
+  }
+
   if (mode === 'draw' && drawing) {
     ctx.strokeStyle = color;
     ctx.lineWidth = currentLineWidth;
@@ -393,7 +400,6 @@ function moveDraw(e) {
     ctx.stroke();
     lastX = pos.x;
     lastY = pos.y;
-
   } else if (mode === 'present') {
     dot.style.left = (pos.x + canvas.offsetLeft - 20) + 'px';
     dot.style.top = (pos.y + canvas.offsetTop - 20 - scrollOffset) + 'px';
@@ -401,13 +407,8 @@ function moveDraw(e) {
     insertCurrentY = Math.max(pos.y, insertStartY);
     const gap = insertCurrentY - insertStartY;
 
-    const baseImage = drawHistory.length > 0 ? drawHistory[drawHistory.length - 1] : null;
-    if (baseImage) {
-      ctx.putImageData(baseImage, 0, 0);
-    } else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
+    const baseImage = drawHistory[drawHistory.length - 1];
+    ctx.putImageData(baseImage, 0, 0);
     if (gap > 0 && insertImageData) {
       ctx.fillStyle = 'white';
       ctx.fillRect(0, insertStartY, canvas.width, gap);
@@ -417,6 +418,12 @@ function moveDraw(e) {
 }
 
 function endDraw(e) {
+  if (scrollMode) {
+    scrollMode = false;
+    scrollToggle.classList.remove('active');
+    return;
+  }
+
   if (mode === 'draw' && drawing) {
     drawing = false;
     drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
@@ -424,46 +431,34 @@ function endDraw(e) {
     dot.style.display = 'none';
   } else if (mode === 'insert' && isInserting) {
     isInserting = false;
-
     const gap = insertCurrentY - insertStartY;
     if (gap > 0 && insertImageData) {
-      // Increase canvas height
-      const oldHeight = canvas.height;
-      const newHeight = oldHeight + gap;
+      const newHeight = canvas.height + gap;
       canvas.height = newHeight;
       canvas.style.height = newHeight + 'px';
-      image.style.height = newHeight + 'px'; // Stretch image placeholder too
-      content.style.height = newHeight + 'px'; // Ensure scroll container sees the height
+      image.style.height = newHeight + 'px';
+      content.style.height = newHeight + 'px';
 
-      // Create a temp canvas to recompose full image
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
       tempCanvas.height = newHeight;
       const tempCtx = tempCanvas.getContext('2d');
 
-      // Draw everything above the insert point
       tempCtx.putImageData(drawHistory[drawHistory.length - 1], 0, 0);
-
-      // Fill gap with white
       tempCtx.fillStyle = 'white';
       tempCtx.fillRect(0, insertStartY, canvas.width, gap);
-
-      // Draw pushed-down content
       tempCtx.putImageData(insertImageData, 0, insertStartY + gap);
 
-      // Draw temp canvas back to the main canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(tempCanvas, 0, 0);
 
       drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     }
-
     insertStartY = null;
     insertCurrentY = null;
     insertImageData = null;
-
     mode = 'draw';
-    setActiveTool('drawTool');
+    setActiveTool('');
   }
 }
 
@@ -489,7 +484,6 @@ canvas.addEventListener('touchmove', moveDraw, { passive: false });
 canvas.addEventListener('touchend', endDraw, { passive: false });
 
 </script>
-
 
 </body>
 </html>
