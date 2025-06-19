@@ -378,10 +378,13 @@ function moveDraw(e) {
     ctx.strokeStyle = color;
     ctx.lineWidth = currentLineWidth;
     ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     lastX = pos.x;
     lastY = pos.y;
+
   } else if (mode === 'present') {
     dot.style.left = (pos.x + canvas.offsetLeft - 20) + 'px';
     dot.style.top = (pos.y + canvas.offsetTop - 20 - scrollOffset) + 'px';
