@@ -81,8 +81,6 @@
       if (!e.isPrimary) return;
       dragging = false;
       dot.style.display = "none";
-      trail = [];
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
     document.addEventListener("pointermove", (e) => {
