@@ -5,182 +5,181 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>iPad Stylus Annotator</title>
   <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  height: 100vh;
-  user-select: none;
-  touch-action: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  font-family: sans-serif;
-}
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100vh;
+      user-select: none;
+      touch-action: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      font-family: sans-serif;
+    }
 
-.toolbar {
-  position: fixed;
-  top: 0;
-  right: 10px;
-  background: rgba(255, 255, 255, 0.5);
-  padding: 10px;
-  border-radius: 0 0 8px 8px;
-  z-index: 10;
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
+    .toolbar {
+      position: fixed;
+      top: 0;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      padding: 10px;
+      border-radius: 0 0 8px 8px;
+      z-index: 10;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
 
-.nav-buttons {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 10;
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-}
+    .nav-buttons {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+    }
 
-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  border: 1px solid grey;
-}
+    button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      border: 1px solid grey;
+    }
 
-button img {
-  width: 20px;
-  height: 20px;
-  pointer-events: none;
-}
+    button img {
+      width: 20px;
+      height: 20px;
+      pointer-events: none;
+    }
 
-.colors {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-}
+    .colors {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+    }
 
-.colors button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid grey;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    .colors button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid grey;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-.colors .red { background: rgb(226, 79, 79); }
-.colors .green { background: rgb(74, 199, 74); }
-.colors .blue { background: rgb(46, 96, 190); }
+    .colors .red { background: rgb(226, 79, 79); }
+    .colors .green { background: rgb(74, 199, 74); }
+    .colors .blue { background: rgb(46, 96, 190); }
 
-.tools {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-}
+    .tools {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+    }
 
-.tools button.active,
-.thicknesses button.active {
-  background: #ffee00;
-}
+    .tools button.active,
+    .thicknesses button.active {
+      background: #ffee00;
+    }
 
-.thicknesses {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-}
+    .thicknesses {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+    }
 
-.thicknesses button {
-  width: 40px;
-  height: 40px;
-  background: white;
-  font-size: 14px;
-  border: 1px solid grey;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    .thicknesses button {
+      width: 40px;
+      height: 40px;
+      background: white;
+      font-size: 14px;
+      border: 1px solid grey;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-#scroll-container {
-  width: 100%;
-  height: 100%;
-  overflow: auto; /* changed from hidden */
-  position: relative;
-}
+    #scroll-container {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      position: relative;
+    }
 
-#content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  transition: transform 0.3s ease-in-out;
-}
+    #content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      transition: transform 0.3s ease-in-out;
+    }
 
-#image {
-  width: 100%;
-  display: block;
-}
+    #image {
+      width: 100%;
+      display: block;
+    }
 
-#canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  touch-action: none;
-  pointer-events: auto;
-}
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      touch-action: none;
+      pointer-events: auto;
+    }
 
-/* === Pointer Indicator as Image === */
-#dotIndicator {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  pointer-events: none;
-  display: none;
-  z-index: 9;
-}
+    .dot {
+      display: inline-block;
+      border-radius: 50%;
+      background: black;
+    }
 
-#presentTrailCanvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 9998;
-}
+    .dot-small {
+      width: 6px;
+      height: 6px;
+    }
 
+    .dot-medium {
+      width: 12px;
+      height: 12px;
+    }
 
-.dot {
-  display: inline-block;
-  border-radius: 50%;
-  background: black;
-}
+    .dot-large {
+      width: 18px;
+      height: 18px;
+    }
 
-.dot-small {
-  width: 6px;
-  height: 6px;
-}
+    #presentDot {
+      position: fixed;
+      width: 24px;
+      height: 24px;
+      background: orange;
+      border-radius: 50%;
+      pointer-events: none;
+      display: none;
+      z-index: 9999;
+    }
 
-.dot-medium {
-  width: 12px;
-  height: 12px;
-}
-
-.dot-large {
-  width: 18px;
-  height: 18px;
-}
-
+    #presentTrailCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9998;
+    }
   </style>
 </head>
 <body>
@@ -215,6 +214,9 @@ button img {
   </div>
 </div>
 
+<canvas id="presentTrailCanvas"></canvas>
+<div id="presentDot"></div>
+
 <div id="fileModal" style="
   position: fixed;
   top: 0; left: 0;
@@ -233,22 +235,7 @@ button img {
   <input type="file" id="modalFileInput" accept="image/*" style="margin-top: 10px;" />
 </div>
 
-<canvas id="presentTrailCanvas"></canvas>
-<div id="presentDot" style="
-  position: fixed;
-  width: 24px;
-  height: 24px;
-  background: orange;
-  border-radius: 50%;
-  pointer-events: none;
-  display: none;
-  z-index: 9999;
-"></div>
-
-
-
 <script>
-  
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const image = document.getElementById('image');
@@ -311,15 +298,12 @@ document.querySelectorAll('.colors button').forEach(btn => {
     color = btn.dataset.color;
     mode = 'draw';
 
-    // Update color active state
     document.querySelectorAll('.colors button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    // Remove active from present and insert tools
     document.querySelectorAll('.tools button').forEach(toolBtn => toolBtn.classList.remove('active'));
   });
 });
-
 
 const modal = document.getElementById('fileModal');
 const modalFileInput = document.getElementById('modalFileInput');
@@ -331,11 +315,10 @@ modalFileInput.addEventListener('change', e => {
   const reader = new FileReader();
   reader.onload = evt => {
     image.src = evt.target.result;
-    modal.style.display = 'none'; // Hide the modal after loading
+    modal.style.display = 'none';
   };
   reader.readAsDataURL(file);
 });
-
 
 document.getElementById('presentTool').addEventListener('click', () => {
   mode = 'present';
@@ -354,7 +337,7 @@ function setActiveTool(activeId) {
 }
 
 function isStylus(e) {
-  return (e.pointerType === 'pen') || (e.touches && e.touches[0]?.touchType === 'stylus');
+  return e.pointerType === 'pen' || (e.touches && e.touches[0]?.touchType === 'stylus');
 }
 
 function getOffset(e) {
@@ -367,140 +350,6 @@ function getOffset(e) {
   }
 }
 
-function startDraw(e) {
-  if (!isStylus(e)) return;
-  e.preventDefault();
-  const pos = getOffset(e);
-  lastX = pos.x;
-  lastY = pos.y;
-  if (e.pointerId !== undefined) canvas.setPointerCapture(e.pointerId);
-
-  if (mode === 'draw') {
-    drawing = true;
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-  } else if (mode === 'present') {
-        presentDot.style.left = (pos.x + canvas.offsetLeft - 12) + 'px';
-        presentDot.style.top = (pos.y + canvas.offsetTop - 12 - scrollOffset) + 'px';
-        presentDot.style.display = 'block';
-  } else if (mode === 'insert') {
-    insertStartY = pos.y;
-    isInserting = true;
-    insertImageData = ctx.getImageData(0, insertStartY, canvas.width, canvas.height - insertStartY);
-  }
-}
-
-function moveDraw(e) {
-  if (!isStylus(e)) return;
-  e.preventDefault();
-  const pos = getOffset(e);
-
-  if (mode === 'draw' && drawing) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = currentLineWidth;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    lastX = pos.x;
-    lastY = pos.y;
-
-  } else if (mode === 'present') {
-    presentDot.style.left = (pos.x + canvas.offsetLeft - 12) + 'px';
-    presentDot.style.top = (pos.y + canvas.offsetTop - 12 - scrollOffset) + 'px';
-  } else if (mode === 'insert' && isInserting) {
-    insertCurrentY = Math.max(pos.y, insertStartY);
-    const gap = insertCurrentY - insertStartY;
-
-    const baseImage = drawHistory.length > 0 ? drawHistory[drawHistory.length - 1] : null;
-    if (baseImage) {
-      ctx.putImageData(baseImage, 0, 0);
-    } else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    if (gap > 0 && insertImageData) {
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, insertStartY, canvas.width, gap);
-      ctx.putImageData(insertImageData, 0, insertStartY + gap);
-    }
-  }
-}
-
-function endDraw(e) {
-  if (mode === 'draw' && drawing) {
-    drawing = false;
-    drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-  } else if (mode === 'present') {
-    presentDot.style.display = 'none';
-  } else if (mode === 'insert' && isInserting) {
-    isInserting = false;
-
-    const gap = insertCurrentY - insertStartY;
-    if (gap > 0 && insertImageData) {
-      // Increase canvas height
-      const oldHeight = canvas.height;
-      const newHeight = oldHeight + gap;
-      canvas.height = newHeight;
-      canvas.style.height = newHeight + 'px';
-      image.style.height = newHeight + 'px'; // Stretch image placeholder too
-      content.style.height = newHeight + 'px'; // Ensure scroll container sees the height
-
-      // Create a temp canvas to recompose full image
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = newHeight;
-      const tempCtx = tempCanvas.getContext('2d');
-
-      // Draw everything above the insert point
-      tempCtx.putImageData(drawHistory[drawHistory.length - 1], 0, 0);
-
-      // Fill gap with white
-      tempCtx.fillStyle = 'white';
-      tempCtx.fillRect(0, insertStartY, canvas.width, gap);
-
-      // Draw pushed-down content
-      tempCtx.putImageData(insertImageData, 0, insertStartY + gap);
-
-      // Draw temp canvas back to the main canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(tempCanvas, 0, 0);
-
-      drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    }
-
-    insertStartY = null;
-    insertCurrentY = null;
-    insertImageData = null;
-
-    mode = 'draw';
-    setActiveTool('drawTool');
-  }
-}
-
-undoBtn.addEventListener('click', () => {
-  if (drawHistory.length > 0) {
-    drawHistory.pop();
-    const previous = drawHistory[drawHistory.length - 1];
-    if (previous) {
-      ctx.putImageData(previous, 0, 0);
-    } else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-  }
-});
-
-canvas.addEventListener('pointerdown', startDraw, { passive: false });
-canvas.addEventListener('pointermove', moveDraw, { passive: false });
-canvas.addEventListener('pointerup', endDraw, { passive: false });
-canvas.addEventListener('pointercancel', endDraw, { passive: false });
-
-canvas.addEventListener('touchstart', startDraw, { passive: false });
-canvas.addEventListener('touchmove', moveDraw, { passive: false });
-canvas.addEventListener('touchend', endDraw, { passive: false });
-
-// --- Stylus Presentation Trail ---
 const presentDot = document.getElementById("presentDot");
 const trailCanvas = document.getElementById("presentTrailCanvas");
 const trailCtx = trailCanvas.getContext("2d");
@@ -511,55 +360,26 @@ function resizeTrailCanvas() {
   trailCanvas.width = window.innerWidth;
   trailCanvas.height = window.innerHeight;
 }
-
 resizeTrailCanvas();
 window.addEventListener("resize", resizeTrailCanvas);
 
-function updatePresentDot(x, y) {
-  presentDot.style.left = (x - 12) + "px";
-  presentDot.style.top = (y - 12) + "px";
-}
-
-function animateTrail() {
-  requestAnimationFrame(animateTrail);
-  if (!trailDragging) return;
-
-  trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
-
-  if (trail.length > 1) {
-    trailCtx.beginPath();
-    trailCtx.moveTo(trail[0].x, trail[0].y);
-    for (let i = 1; i < trail.length; i++) {
-      trailCtx.lineTo(trail[i].x, trail[i].y);
-    }
-    trailCtx.strokeStyle = "orange";
-    trailCtx.lineWidth = 18;
-    trailCtx.lineCap = "round";
-    trailCtx.stroke();
-  }
-}
-
-animateTrail();
-
 function updatePresentTool(e, type) {
-  if (!isStylus(e)) return;
-
-  const pos = getOffset(e);
-  const globalX = e.clientX;
-  const globalY = e.clientY;
-
-  if (mode !== "present") return;
+  const globalX = e.clientX ?? (e.touches?.[0]?.clientX);
+  const globalY = e.clientY ?? (e.touches?.[0]?.clientY);
+  if (globalX == null || globalY == null || mode !== "present") return;
 
   if (type === "start") {
     trailDragging = true;
     presentDot.style.display = "block";
     trail = [{ x: globalX, y: globalY }];
-    updatePresentDot(globalX, globalY);
+    presentDot.style.left = (globalX - 12) + "px";
+    presentDot.style.top = (globalY - 12) + "px";
   } else if (type === "move") {
     if (trailDragging) {
       trail.push({ x: globalX, y: globalY });
       if (trail.length > 15) trail.shift();
-      updatePresentDot(globalX, globalY);
+      presentDot.style.left = (globalX - 12) + "px";
+      presentDot.style.top = (globalY - 12) + "px";
     }
   } else if (type === "end") {
     trailDragging = false;
@@ -569,7 +389,24 @@ function updatePresentTool(e, type) {
   }
 }
 
-// Patch into existing handlers
+function animateTrail() {
+  requestAnimationFrame(animateTrail);
+  if (!trailDragging || trail.length < 2) return;
+
+  trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+  trailCtx.beginPath();
+  trailCtx.moveTo(trail[0].x, trail[0].y);
+  for (let i = 1; i < trail.length; i++) {
+    trailCtx.lineTo(trail[i].x, trail[i].y);
+  }
+  trailCtx.strokeStyle = "orange";
+  trailCtx.lineWidth = 18;
+  trailCtx.lineCap = "round";
+  trailCtx.stroke();
+}
+animateTrail();
+
+// Original handlers
 const origStartDraw = startDraw;
 const origMoveDraw = moveDraw;
 const origEndDraw = endDraw;
@@ -586,8 +423,6 @@ endDraw = function(e) {
   origEndDraw(e);
   updatePresentTool(e, "end");
 };
-
 </script>
-
 </body>
 </html>
