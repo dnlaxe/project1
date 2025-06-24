@@ -2,34 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stylus Drag Trail (Fixed)</title>
+  <title>Stylus Drag Trail</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
       overflow: hidden;
-      touch-action: none;
-    }
-
-    #wrapper {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    #trail-canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 0;
+      overscroll-behavior: none;
+      background: white;
+      touch-action: none; /* prevents panning/zooming */
+      cursor: none;
     }
 
     #cursor-dot {
-      position: absolute;
+      position: fixed;
       width: 24px;
       height: 24px;
       background: orange;
@@ -38,76 +25,73 @@
       z-index: 10;
       display: none;
     }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
-  <div id="wrapper">
-    <canvas id="trail-canvas"></canvas>
-    <div id="cursor-dot"></div>
-  </div>
+  <canvas id="trail-canvas"></canvas>
+  <div id="cursor-dot"></div>
 
   <script>
     const dot = document.getElementById("cursor-dot");
     const canvas = document.getElementById("trail-canvas");
     const ctx = canvas.getContext("2d");
-    const wrapper = document.getElementById("wrapper");
-
-    let dragging = false;
-    let trail = [];
-    let mouse = { x: 0, y: 0 };
 
     function resizeCanvas() {
-      canvas.width = wrapper.clientWidth;
-      canvas.height = wrapper.clientHeight;
+      const vv = window.visualViewport;
+      canvas.width = vv.width;
+      canvas.height = vv.height;
     }
 
-    // Ensure correct sizing on load and resize
-    window.addEventListener("resize", resizeCanvas);
-    window.visualViewport?.addEventListener("resize", resizeCanvas);
     resizeCanvas();
+    window.visualViewport.addEventListener("resize", resizeCanvas);
+    window.visualViewport.addEventListener("scroll", resizeCanvas);
 
-    function updatePosition(x, y) {
+    let mouse = { x: 0, y: 0 };
+    let trail = [];
+    let dragging = false;
+
+    function updatePosition(clientX, clientY) {
+      const offsetX = window.visualViewport.offsetLeft;
+      const offsetY = window.visualViewport.offsetTop;
+      const x = clientX - offsetX;
+      const y = clientY - offsetY;
       mouse.x = x;
       mouse.y = y;
-    }
-
-    function positionDot() {
       if (dragging) {
-        dot.style.left = (mouse.x - 12) + "px";
-        dot.style.top = (mouse.y - 12) + "px";
+        dot.style.transform = `translate(${x - 12}px, ${y - 12}px)`;
       }
     }
 
-    function onPointerDown(e) {
+    document.addEventListener("pointerdown", (e) => {
       if (!e.isPrimary) return;
       dragging = true;
       dot.style.display = "block";
       updatePosition(e.clientX, e.clientY);
-      positionDot();
-      canvas.setPointerCapture?.(e.pointerId);
-    }
+    });
 
-    function onPointerMove(e) {
-      if (!e.isPrimary) return;
-      updatePosition(e.clientX, e.clientY);
-    }
-
-    function onPointerUp(e) {
+    document.addEventListener("pointerup", (e) => {
       if (!e.isPrimary) return;
       dragging = false;
       dot.style.display = "none";
       trail = [];
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
+    });
 
-    canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointermove", onPointerMove);
-    canvas.addEventListener("pointerup", onPointerUp);
-    canvas.addEventListener("pointercancel", onPointerUp);
+    document.addEventListener("pointermove", (e) => {
+      if (!e.isPrimary) return;
+      updatePosition(e.clientX, e.clientY);
+    });
 
     function animate() {
       requestAnimationFrame(animate);
-      positionDot();
 
       if (dragging) {
         trail.push({ x: mouse.x, y: mouse.y });
