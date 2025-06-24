@@ -262,7 +262,6 @@ const scrollStep = 200;
 let mode = 'draw';
 let currentLineWidth = 2;
 
-const dot = document.getElementById('dotIndicator');
 const undoBtn = document.getElementById('undoBtn');
 const drawHistory = [];
 
@@ -370,9 +369,9 @@ function startDraw(e) {
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
   } else if (mode === 'present') {
-    dot.style.left = (pos.x + canvas.offsetLeft - 20) + 'px';
-    dot.style.top = (pos.y + canvas.offsetTop - 20 - scrollOffset) + 'px';
-    dot.style.display = 'block';
+        presentDot.style.left = (pos.x + canvas.offsetLeft - 12) + 'px';
+        presentDot.style.top = (pos.y + canvas.offsetTop - 12 - scrollOffset) + 'px';
+        presentDot.style.display = 'block';
   } else if (mode === 'insert') {
     insertStartY = pos.y;
     isInserting = true;
@@ -397,8 +396,8 @@ function moveDraw(e) {
     lastY = pos.y;
 
   } else if (mode === 'present') {
-    dot.style.left = (pos.x + canvas.offsetLeft - 20) + 'px';
-    dot.style.top = (pos.y + canvas.offsetTop - 20 - scrollOffset) + 'px';
+    presentDot.style.left = (pos.x + canvas.offsetLeft - 12) + 'px';
+    presentDot.style.top = (pos.y + canvas.offsetTop - 12 - scrollOffset) + 'px';
   } else if (mode === 'insert' && isInserting) {
     insertCurrentY = Math.max(pos.y, insertStartY);
     const gap = insertCurrentY - insertStartY;
@@ -423,7 +422,7 @@ function endDraw(e) {
     drawing = false;
     drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
   } else if (mode === 'present') {
-    dot.style.display = 'none';
+    presentDot.style.display = 'none';
   } else if (mode === 'insert' && isInserting) {
     isInserting = false;
 
