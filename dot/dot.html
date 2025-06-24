@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Drag Trail Only</title>
+  <title>Stylus Drag Trail</title>
   <style>
     * {
       cursor: none;
+      touch-action: none; /* prevents panning on touch */
     }
     body {
       margin: 0;
@@ -58,24 +59,32 @@
     let trail = [];
     let dragging = false;
 
-    document.addEventListener("mousedown", () => {
+    function updatePosition(x, y) {
+      mouse.x = x;
+      mouse.y = y;
+      if (dragging) {
+        dot.style.transform = `translate(${x - 12}px, ${y - 12}px)`;
+      }
+    }
+
+    document.addEventListener("pointerdown", (e) => {
+      if (!e.isPrimary) return; // only respond to main pointer (finger/stylus/mouse)
       dragging = true;
       dot.style.display = "block";
+      updatePosition(e.clientX, e.clientY);
     });
 
-    document.addEventListener("mouseup", () => {
+    document.addEventListener("pointerup", (e) => {
+      if (!e.isPrimary) return;
       dragging = false;
       dot.style.display = "none";
       trail = [];
       ctx.clearRect(0, 0, width, height);
     });
 
-    document.addEventListener("mousemove", (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-      if (dragging) {
-        dot.style.transform = `translate(${mouse.x - 12}px, ${mouse.y - 12}px)`;
-      }
+    document.addEventListener("pointermove", (e) => {
+      if (!e.isPrimary) return;
+      updatePosition(e.clientX, e.clientY);
     });
 
     function animate() {
