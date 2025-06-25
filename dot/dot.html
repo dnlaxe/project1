@@ -101,7 +101,7 @@
         trail.push({ x: mouse.x, y: mouse.y });
         if (trail.length > 15) trail.shift();
       } else {
-        if (trail.length > 0 && frameCount % 3 === 0) {
+        if (trail.length > 0 && frameCount % 300 === 0) {
           trail.shift(); // remove 1 point every 3 frames
         }
       }
