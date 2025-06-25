@@ -4,15 +4,14 @@
   <meta charset="UTF-8" />
   <title>Stylus Drag Trail</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-      overscroll-behavior: none;
-      background: white;
-      touch-action: none; /* prevents panning/zooming */
+    * {
       cursor: none;
+      touch-action: none;
+    }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: white;
     }
 
     #cursor-dot {
@@ -44,25 +43,24 @@
     const canvas = document.getElementById("trail-canvas");
     const ctx = canvas.getContext("2d");
 
-    function resizeCanvas() {
-      const vv = window.visualViewport;
-      canvas.width = vv.width;
-      canvas.height = vv.height;
-    }
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
 
-    resizeCanvas();
-    window.visualViewport.addEventListener("resize", resizeCanvas);
-    window.visualViewport.addEventListener("scroll", resizeCanvas);
+    window.addEventListener("resize", () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    });
 
-    let mouse = { x: 0, y: 0 };
+    let mouse = { x: width / 2, y: height / 2 };
     let trail = [];
     let dragging = false;
+    let frameCount = 0;
 
-    function updatePosition(clientX, clientY) {
-      const offsetX = window.visualViewport.offsetLeft;
-      const offsetY = window.visualViewport.offsetTop;
-      const x = clientX - offsetX;
-      const y = clientY - offsetY;
+    function updatePosition(x, y) {
       mouse.x = x;
       mouse.y = y;
       if (dragging) {
@@ -81,8 +79,7 @@
       if (!e.isPrimary) return;
       dragging = false;
       dot.style.display = "none";
-      trail = [];
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // No longer clearing trail or canvas here
     });
 
     document.addEventListener("pointermove", (e) => {
@@ -90,24 +87,20 @@
       updatePosition(e.clientX, e.clientY);
     });
 
-    let frameCount = 0; // track frames
-
     function animate() {
       requestAnimationFrame(animate);
-
       frameCount++;
 
       if (dragging) {
         trail.push({ x: mouse.x, y: mouse.y });
         if (trail.length > 15) trail.shift();
       } else {
-        if (trail.length > 0 && frameCount % 300 === 0) {
-          trail.shift(); // remove 1 point every 3 frames
+        if (trail.length > 0 && frameCount % 3 === 0) {
+          trail.shift(); // Gradually remove points
         }
       }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+      ctx.clearRect(0, 0, width, height);
 
       if (trail.length > 1) {
         ctx.beginPath();
