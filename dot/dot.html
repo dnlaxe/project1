@@ -6,7 +6,7 @@
   <style>
     * {
       cursor: none;
-      touch-action: none;
+      touch-action: none; /* prevents panning on touch */
     }
     body {
       margin: 0;
@@ -58,7 +58,6 @@
     let mouse = { x: width / 2, y: height / 2 };
     let trail = [];
     let dragging = false;
-    let frameCount = 0;
 
     function updatePosition(x, y) {
       mouse.x = x;
@@ -79,7 +78,7 @@
       if (!e.isPrimary) return;
       dragging = false;
       dot.style.display = "none";
-      // No longer clearing trail or canvas here
+      // Trail is no longer cleared immediately
     });
 
     document.addEventListener("pointermove", (e) => {
@@ -89,17 +88,17 @@
 
     function animate() {
       requestAnimationFrame(animate);
-      frameCount++;
 
+      // Add to trail while dragging
       if (dragging) {
         trail.push({ x: mouse.x, y: mouse.y });
         if (trail.length > 15) trail.shift();
       } else {
-        if (trail.length > 0 && frameCount % 3 === 0) {
-          trail.shift(); // Gradually remove points
-        }
+        // Gradually fade out by removing one point per frame
+        if (trail.length > 0) trail.shift();
       }
 
+      // Clear and redraw trail
       ctx.clearRect(0, 0, width, height);
 
       if (trail.length > 1) {
