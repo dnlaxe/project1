@@ -44,6 +44,7 @@
     .logo {
       font-size: 2rem;
       letter-spacing: -0.05rem;
+      color: #020f59;
     }
 
     .nav-links {
@@ -51,17 +52,16 @@
       align-items: center;
       gap: 1rem;
       flex-wrap: wrap;
-      margin-right: 1rem;
     }
 
     .nav-link {
       font-size: 1rem;
       text-decoration: none;
-      color: #003477;
+      color: #020f59;
     }
 
     .nav-button {
-      background-color: #003477;
+      background-color: #020f59;
       color: #fff;
       padding: 0.5rem 1rem;
       font-size: 0.9rem;
@@ -118,14 +118,14 @@
 
     .checklist li::before {
       content: "✓";
-      color: #b5f299;
+      color: #ffa720;
       font-weight: bold;
       display: inline-block;
       width: 1.5em;
     }
 
     footer {
-      background-color: #003477;
+      background-color: #020f59;
       color: #feffff;
       padding: 4rem 2rem;
       font-size: 1.1rem;
@@ -196,6 +196,10 @@
         font-size: 1.3rem;
         padding: 1.2rem 3rem;
       }
+
+      .nav-links {
+        margin-right: 1rem;
+      }
     }
 
     @media (max-width: 600px) {
@@ -211,6 +215,7 @@
         flex-wrap: wrap;
         justify-content: flex-end;
         gap: 1rem;
+        margin-right: 1rem;
       }
 
       .logo {
