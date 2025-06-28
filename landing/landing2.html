@@ -104,6 +104,7 @@
       font-size: 1rem;
       cursor: pointer;
       border-radius: 8px;
+            font-family: "Lexend", sans-serif;
     }
 
     .checklist {
@@ -124,8 +125,8 @@
     }
 
     footer {
-      background-color: #2e2e2e;
-      color: #f2f2f2;
+      background-color: #003477;
+      color: #feffff;
       padding: 4rem 2rem;
       font-size: 1.1rem;
       text-align: center;
@@ -134,6 +135,7 @@
     footer .footer-links {
       margin-top: 1rem;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       gap: 2rem;
       flex-wrap: wrap;
@@ -178,7 +180,7 @@
     }
 
     .orange {
-      background-color: #ffa720;
+      background-color: #ebeadb;
     }
 
     @media (min-width: 1024px) {
@@ -236,6 +238,14 @@
         font-size: 1.1rem;
       }
     }
+
+.hero-image {
+  max-width: 500px; /* Controls max size on larger screens */
+  width: 100%;       /* Makes it responsive */
+  height: auto;
+  margin-bottom: 2rem;
+}
+
   </style>
 </head>
 <body>
@@ -251,6 +261,7 @@
   </header>
 
   <section class="blue">
+    <img src="hero.png" alt="Illustration of learning" class="hero-image" />
     <h2>Learn English by Fixing Your Mistakes</h2>
     <p>Tired of robotic grammar checkers? Checkmate connects you with real people who help you improve step-by-step through personalized video corrections.</p>
     <button class="cta-button">Get Started</button>
@@ -271,12 +282,12 @@
     <p>Your Checkmate records a short video: they mark your writing and explain what to fix — and why. Watch, listen, absorb.</p>
   </section>
 
-  <section class="orange">
+  <section class="white">
     <h2>Step 4: Learn. Rewatch. Improve.</h2>
     <p>This isn't just feedback — it's a personal mini-lesson. Rewatch anytime. Grow your skill with every submission.</p>
   </section>
 
-  <section class="white">
+  <section class="orange">
     <h2>Why It Works: Backed by Research</h2>
     <ul class="checklist">
       <li>Learners retain more when corrections are explained aloud — not just marked <span id="citation">(Lyster & Ranta, 1997).</span></li>
