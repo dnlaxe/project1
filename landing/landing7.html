@@ -51,19 +51,47 @@
     .hamburger {
       width: 28px;
       height: 22px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      position: relative;
       cursor: pointer;
       z-index: 1001;
     }
 
     .hamburger span {
-      display: block;
+      position: absolute;
+      left: 0;
+      width: 100%;
       height: 3px;
       background-color: #000;
       border-radius: 2px;
-      width: 100%;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      transform-origin: center;
+    }
+
+    .hamburger span:nth-child(1) {
+      top: 0;
+    }
+
+    .hamburger span:nth-child(2) {
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .hamburger span:nth-child(3) {
+      bottom: 0;
+    }
+
+    .hamburger.active span:nth-child(1) {
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .hamburger.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger.active span:nth-child(3) {
+      top: 50%;
+      transform: translateY(-50%) rotate(-45deg);
     }
 
     main {
@@ -185,7 +213,6 @@
       border-radius: 4px;
     }
 
-    /* === Modals === */
     .modal {
       position: fixed;
       top: 0;
@@ -322,7 +349,6 @@
         <input type="password" placeholder="Confirm Password" required />
         <button type="submit">Sign Up</button>
       </form>
-
       <div class="checker-box">
         <p>Interested in being a checker?</p>
         <button>Apply as Checker</button>
@@ -358,9 +384,18 @@
     const openLogin = document.getElementById('openLogin');
     const ctaButton = document.getElementById('ctaButton');
 
+    function updateHamburgerState() {
+      const isAnyModalOpen =
+        menu.classList.contains('active') ||
+        signupModal.classList.contains('active') ||
+        loginModal.classList.contains('active');
+      hamburger.classList.toggle('active', isAnyModalOpen);
+    }
+
     function closeAllModals() {
       [menu, signupModal, loginModal].forEach(el => el.classList.remove('active'));
       backdrop.classList.remove('active');
+      updateHamburgerState();
     }
 
     hamburger.addEventListener('click', () => {
@@ -374,6 +409,7 @@
       } else {
         menu.classList.add('active');
         backdrop.classList.add('active');
+        updateHamburgerState();
       }
     });
 
@@ -383,18 +419,21 @@
       closeAllModals();
       signupModal.classList.add('active');
       backdrop.classList.add('active');
+      updateHamburgerState();
     });
 
     openLogin.addEventListener('click', () => {
       closeAllModals();
       loginModal.classList.add('active');
       backdrop.classList.add('active');
+      updateHamburgerState();
     });
 
     ctaButton.addEventListener('click', () => {
       closeAllModals();
       signupModal.classList.add('active');
       backdrop.classList.add('active');
+      updateHamburgerState();
     });
   </script>
 
