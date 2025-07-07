@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checker Profile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --color-bg: #fdf6ee;
+      --color-text: #000000;
+      --color-cta-bg: #000000;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    header {
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .user-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: 'Gabarito', sans-serif;
+    }
+
+    .back-link {
+      font-weight: 600;
+      text-decoration: none;
+      color: #000;
+      font-size: 1rem;
+      border: 2px solid #000;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      transition: background 0.2s ease;
+    }
+
+    .back-link:hover {
+      background: #000;
+      color: #fff;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .profile-header img {
+      border-radius: 50%;
+      width: 140px;
+      height: 140px;
+    }
+
+    .profile-info h2 {
+      font-family: 'Gabarito', sans-serif;
+      font-size: 2rem;
+      margin: 0;
+    }
+
+    .badge-container {
+      display: flex;
+      gap: 0.5rem;
+      margin: 0.5rem 0 1rem;
+    }
+
+    .mini-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      text-transform: uppercase;
+    }
+
+    .trusted { background-color: #2ecc71; }
+    .trained { background-color: #3498db; }
+    .community { background-color: #9b59b6; }
+
+    .rating-line {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .section {
+      margin-top: 2rem;
+    }
+
+    .section h3 {
+      font-size: 1.4rem;
+      font-family: 'Gabarito', sans-serif;
+      margin-bottom: 1rem;
+    }
+
+    .section p {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .review {
+      background: #fff;
+      border: 1px solid #000;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .review strong {
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="user-name">Checker Profile</div>
+    <a href="dashboard.html" class="back-link">Back</a>
+  </header>
+
+  <main>
+    <div class="profile-header">
+      <img src="https://i.pravatar.cc/140?img=48" alt="Julia A." />
+      <div class="profile-info">
+        <h2>Julia A.</h2>
+        <div class="badge-container">
+          <span class="mini-badge trusted">Trusted</span>
+          <span class="mini-badge trained">Trained</span>
+        </div>
+        <div class="rating-line">⭐ 4.7 (87 reviews)</div>
+        <div>Languages: English, Spanish</div>
+        <div>Avg. response time: 2 days</div>
+        <div>Rate: <strong>$15</strong></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Biography</h3>
+      <p>
+        Julia is a detail-oriented language specialist with a strong background in academic writing and editorial review.
+        She's passionate about helping others improve their communication through thoughtful, constructive feedback.
+      </p>
+    </div>
+
+    <div class="section">
+      <h3>Qualifications</h3>
+      <p>
+        - BA in Linguistics, University of Barcelona<br />
+        - Certified English-Spanish Translator<br />
+        - Advanced Proofreading Certification (ACEP)
+      </p>
+    </div>
+
+    <div class="section">
+      <h3>Experience</h3>
+      <p>
+        Over 5 years of experience reviewing academic, business, and creative writing submissions. Julia has completed over 500 editorial projects and is known for timely, high-quality reviews.
+      </p>
+    </div>
+
+    <div class="section">
+      <h3>Reviews</h3>
+
+      <div class="review">
+        <strong>Anna T.</strong>
+        “Very detailed and helpful feedback. I really appreciated the tone and care in the suggestions.”
+      </div>
+
+      <div class="review">
+        <strong>David M.</strong>
+        “Julia was fast, clear, and professional. I’ll definitely assign to her again.”
+      </div>
+
+      <div class="review">
+        <strong>Maya L.</strong>
+        “Loved working with Julia! Her notes helped me strengthen my argument in subtle but impactful ways.”
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

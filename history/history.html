@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User Dashboard</title>
-
-  <!-- Fonts -->
+  <title>History - Archived Submissions</title>
   <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <style>
+<style>
     *, *::before, *::after {
       box-sizing: border-box;
     }
@@ -421,110 +419,89 @@
 </div>
 
 
- <main>
-  <h1>Welcome to your dashboard</h1>
-  <p>Here you can track your writing submissions, feedback history, and manage your account preferences.</p>
+  <main>
+    <h1>Your Archived Submissions</h1>
+    <p>These are your completed tasks that have been archived for your records.</p>
 
-  <div class="cards-container">
-    <div class="card" onclick="toggleCard(this)">
-      <div class="card-header">
-        <span class="card-title">Submission 1</span>
-        <span class="badge status-pending">Pending</span>
-      </div>
-      <div class="card-details">
-        <div class="details-left">
-          <p><strong>Submitted:</strong> July 4, 2025</p>
-          <p><strong>Language:</strong> English</p>
-          <p><strong>Words:</strong> 812</p>
-          <p><strong>Assigned to:</strong> Tim</p>
+    <div class="cards-container">
+      <div class="card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <span class="card-title">Submission A</span>
+          <span class="badge status-archived">Archived</span>
         </div>
-        <div class="details-right">
-          <button>Edit</button>
-          <button>Delete</button>
+        <div class="card-details">
+          <div class="details-left">
+            <p><strong>Submitted:</strong> June 15, 2025</p>
+            <p><strong>Language:</strong> German</p>
+            <p><strong>Words:</strong> 742</p>
+            <p><strong>Reviewed by:</strong> Lisa</p>
+          </div>
+          <div class="details-right">
+            <button>View</button>
+            <button>Download</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <span class="card-title">Submission B</span>
+          <span class="badge status-archived">Archived</span>
+        </div>
+        <div class="card-details">
+          <div class="details-left">
+            <p><strong>Submitted:</strong> May 30, 2025</p>
+            <p><strong>Language:</strong> Japanese</p>
+            <p><strong>Words:</strong> 612</p>
+            <p><strong>Reviewed by:</strong> Hiro</p>
+          </div>
+          <div class="details-right">
+            <button>View</button>
+            <button>Download</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <span class="card-title">Submission C</span>
+          <span class="badge status-archived">Archived</span>
+        </div>
+        <div class="card-details">
+          <div class="details-left">
+            <p><strong>Submitted:</strong> May 10, 2025</p>
+            <p><strong>Language:</strong> Italian</p>
+            <p><strong>Words:</strong> 835</p>
+            <p><strong>Reviewed by:</strong> Marco</p>
+          </div>
+          <div class="details-right">
+            <button>View</button>
+            <button>Download</button>
+          </div>
         </div>
       </div>
     </div>
-
-    <div class="card" onclick="toggleCard(this)">
-      <div class="card-header">
-        <span class="card-title">Submission 2</span>
-        <span class="badge status-reviewed">Reviewed</span>
-      </div>
-      <div class="card-details">
-        <div class="details-left">
-          <p><strong>Submitted:</strong> July 1, 2025</p>
-          <p><strong>Language:</strong> Spanish</p>
-          <p><strong>Words:</strong> 537</p>
-        </div>
-        <div class="details-right">
-          <button>Edit</button>
-          <button>Delete</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" onclick="toggleCard(this)">
-      <div class="card-header">
-        <span class="card-title">Submission 3</span>
-        <span class="badge status-inprogress">In Progress</span>
-      </div>
-      <div class="card-details">
-        <div class="details-left">
-          <p><strong>Submitted:</strong> June 30, 2025</p>
-          <p><strong>Language:</strong> French</p>
-          <p><strong>Words:</strong> 965</p>
-        </div>
-        <div class="details-right">
-          <button>Edit</button>
-          <button>Delete</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</main>
-
-
-  <button class="floating-plus" title="New Submission">+</button>
-
-  <div class="modal" id="newSubmissionModal">
-    <div class="modal-content">
-      <h2>New Submission</h2>
-      <form>
-        <input type="text" placeholder="Title" required />
-        <input type="text" placeholder="Level (e.g. Beginner, Intermediate)" required />
-        <input type="number" placeholder="Word Count" required />
-        <input type="file" required />
-        <button type="submit">Submit</button>
-      </form>
-    </div>
-  </div>
+  </main>
 
   <script>
     const hamburger = document.getElementById('hamburger');
     const menu = document.getElementById('menu');
     const backdrop = document.getElementById('backdrop');
-    const newSubmissionModal = document.getElementById('newSubmissionModal');
-    const plusButton = document.querySelector('.floating-plus');
 
     function closeAllModals() {
       menu.classList.remove('active');
-      newSubmissionModal.classList.remove('active');
       backdrop.classList.remove('active');
       document.body.classList.remove('modal-open');
       updateHamburgerState();
     }
 
     function updateHamburgerState() {
-      const isAnythingOpen =
-        menu.classList.contains('active') ||
-        newSubmissionModal.classList.contains('active');
+      const isAnythingOpen = menu.classList.contains('active');
       hamburger.classList.toggle('active', isAnythingOpen);
     }
 
     hamburger.addEventListener('click', () => {
-      const isAnythingOpen =
-        menu.classList.contains('active') ||
-        newSubmissionModal.classList.contains('active');
+      const isAnythingOpen = menu.classList.contains('active');
 
       if (isAnythingOpen) {
         closeAllModals();
@@ -535,20 +512,18 @@
       }
     });
 
-    plusButton.addEventListener('click', () => {
-      closeAllModals();
-      newSubmissionModal.classList.add('active');
-      backdrop.classList.add('active');
-      document.body.classList.add('modal-open');
-      updateHamburgerState();
-    });
-
     backdrop.addEventListener('click', closeAllModals);
 
     function toggleCard(cardElement) {
       cardElement.classList.toggle('active');
     }
   </script>
+
+  <style>
+    .status-archived {
+      background-color: #7f8c8d;
+    }
+  </style>
 
 </body>
 </html>

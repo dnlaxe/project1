@@ -171,7 +171,7 @@
     .menu-links {
       text-align: left;
       width: 100%;
-      margin-top: 5rem;
+      margin-top: 1rem;
     }
 
     .menu-links a {
@@ -187,7 +187,7 @@
     .menu-actions {
       display: flex;
       gap: 1rem;
-      margin-top: 1rem;
+      margin-top: 4rem;
       flex-wrap: wrap;
     }
 
@@ -326,16 +326,17 @@
   <div class="backdrop" id="backdrop"></div>
 
   <!-- Slide-in Menu -->
+  <!-- Slide-in Menu -->
   <div class="menu-overlay" id="menu">
+    <div class="menu-actions">
+      <button class="signup" id="openSignup">Sign Up</button>
+      <button class="login" id="openLogin">Log In</button>
+    </div>
     <nav class="menu-links">
       <a href="#">Home</a>
       <a href="#">About</a>
       <a href="#">Contact</a>
     </nav>
-    <div class="menu-actions">
-      <button class="signup" id="openSignup">Sign Up</button>
-      <button class="login" id="openLogin">Log In</button>
-    </div>
   </div>
 
   <!-- Sign Up Modal -->
@@ -343,7 +344,6 @@
     <div class="modal-content">
       <h2>Create your account</h2>
       <form>
-        <input type="text" placeholder="Full Name" required />
         <input type="email" placeholder="Email Address" required />
         <input type="password" placeholder="Password" required />
         <input type="password" placeholder="Confirm Password" required />

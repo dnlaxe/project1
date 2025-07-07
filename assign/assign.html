@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Dashboard</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-bg: #fdf6ee;
+      --color-text: #000000;
+      --color-cta-bg: #000000;
+      --color-cta-text: #000000;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      color: var(--color-text);
+      overflow-x: hidden;
+      background-color: var(--color-bg);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 2rem;
+    }
+
+    .user-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: 'Gabarito', sans-serif;
+    }
+
+    .hamburger {
+      width: 28px;
+      height: 22px;
+      position: relative;
+      cursor: pointer;
+      z-index: 1001;
+    }
+
+    .hamburger span {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background-color: #000;
+      border-radius: 2px;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      transform-origin: center;
+    }
+
+    .hamburger span:nth-child(1) { top: 0; }
+    .hamburger span:nth-child(2) { top: 50%; transform: translateY(-50%); }
+    .hamburger span:nth-child(3) { bottom: 0; }
+
+    .hamburger.active span:nth-child(1) {
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .hamburger.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger.active span:nth-child(3) {
+      top: 50%;
+      transform: translateY(-50%) rotate(-45deg);
+    }
+
+    .backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease;
+      z-index: 998;
+    }
+
+    .backdrop.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .menu-overlay {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 60%;
+      max-width: 320px;
+      height: 100%;
+      background-color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem;
+      z-index: 999;
+      transform: translateX(100%);
+      transition: transform 0.4s ease;
+    }
+
+    .menu-overlay.active {
+      transform: translateX(0%);
+    }
+
+    .menu-links {
+      margin-top: 5rem;
+    }
+
+    .menu-links a {
+      display: block;
+      font-size: 2rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: #000;
+      margin: 1rem 0;
+      font-family: 'Gabarito', sans-serif;
+    }
+
+    main {
+      max-width: 1000px;
+      padding: 2rem;
+      margin: auto;
+    }
+
+    h1 {
+      font-family: 'Gabarito', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 600;
+      line-height: 1.3;
+      margin-bottom: 1.5rem;
+    }
+
+    p {
+      font-size: 1.2rem;
+      line-height: 1.8;
+      margin-bottom: 2rem;
+    }
+
+    .cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background-color: #fff;
+      border: 2px solid #000;
+      border-radius: 4px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .card:hover {
+      background-color: #f5f5f5;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      font-family: 'Gabarito', sans-serif;
+    }
+
+    .mini-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      text-transform: uppercase;
+    }
+
+    .trusted { background-color: #2ecc71; }
+    .trained { background-color: #3498db; }
+    .community { background-color: #9b59b6; }
+
+    .rating {
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Gabarito', sans-serif;
+    }
+
+    .badge {
+      padding: 0.3rem 0.75rem;
+      font-size: 0.85rem;
+      border-radius: 12px;
+      font-weight: 600;
+      color: white;
+      background-color: #27ae60;
+      margin-top: 0.5rem;
+      align-self: flex-end;
+    }
+
+    .card-details {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      padding-top: 0;
+      transition: max-height 0.4s ease, opacity 0.4s ease, padding-top 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .card.active .card-details {
+      max-height: 300px;
+      opacity: 1;
+      padding-top: 1rem;
+    }
+
+    .details-left {
+      flex: 1;
+    }
+
+    .details-left p {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+    }
+
+    .details-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .details-right button {
+      padding: 0.4rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 1px solid #000;
+      background: transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .details-right button:hover {
+      background: #000;
+      color: #fff;
+    }
+
+    .logout-button {
+  margin-top: auto;
+  align-self: flex-end;
+  background-color: transparent;
+  border: 1px solid #000;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.logout-button:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+
+    @media (max-width: 600px) {
+      header {
+        padding: 1.5rem 1.5rem;
+      }
+
+      main {
+        padding: 0 1.5rem;
+      }
+
+      .menu-overlay {
+        padding: 2rem 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="user-name">Hello, Alex</div>
+    <div class="hamburger" id="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </header>
+
+  <div class="backdrop" id="backdrop"></div>
+
+<div class="menu-overlay" id="menu">
+  <nav class="menu-links">
+    <a href="#">Home</a>
+    <a href="#">History</a>
+    <a href="#">Settings</a>
+  </nav>
+  <button class="logout-button">Log Out</button>
+</div>
+
+
+    <main>
+    <h1>Available Checkers</h1>
+    <p>Browse and assign your work to a checker.</p>
+
+    <div class="cards-container">
+
+        <!-- Julia A. -->
+        <div class="card" onclick="toggleCard(this)">
+        <div class="card-header">
+            <div class="card-title-badges">
+            <span class="card-title">Julia A.</span>
+            <span class="mini-badge trusted">Trusted</span>
+            <span class="mini-badge trained">Trained</span>
+            </div>
+            <span class="rating">⭐ 4.7 (87)</span>
+        </div>
+        <div class="card-details">
+            <div class="details-left" style="display: flex; align-items: center; gap: 1rem;">
+            <img src="https://i.pravatar.cc/120?img=48" alt="Julia Avatar" style="border-radius: 50%; width: 120px; height: 120px;" />
+            <div>
+                <p>Languages: English, Spanish</p>
+                <p>Reviews completed: 87</p>
+                <p>Avg. response: 2 days</p>
+            </div>
+            </div>
+            <div class="details-right">
+            <button>View Profile</button>
+            <button>Assign</button>
+            <span class="badge">$15</span>
+            </div>
+        </div>
+        </div>
+
+        <!-- Leo M. -->
+        <div class="card" onclick="toggleCard(this)">
+        <div class="card-header">
+            <div class="card-title-badges">
+            <span class="card-title">Leo M.</span>
+            <span class="mini-badge trained">Trained</span>
+            </div>
+            <span class="rating">⭐ 4.3 (45)</span>
+        </div>
+        <div class="card-details">
+            <div class="details-left" style="display: flex; align-items: center; gap: 1rem;">
+            <img src="https://i.pravatar.cc/120?img=49" alt="Leo Avatar" style="border-radius: 50%; width: 120px; height: 120px;" />
+            <div>
+                <p>Languages: French, German</p>
+                <p>Reviews completed: 45</p>
+                <p>Avg. response: 3 days</p>
+            </div>
+            </div>
+            <div class="details-right">
+            <button>View Profile</button>
+            <button>Assign</button>
+            <span class="badge">$22</span>
+            </div>
+        </div>
+        </div>
+
+        <!-- Sophie B. -->
+        <div class="card" onclick="toggleCard(this)">
+        <div class="card-header">
+            <div class="card-title-badges">
+            <span class="card-title">Sophie B.</span>
+            <span class="mini-badge trusted">Trusted</span>
+            </div>
+            <span class="rating">⭐ 4.6 (62)</span>
+        </div>
+        <div class="card-details">
+            <div class="details-left" style="display: flex; align-items: center; gap: 1rem;">
+            <img src="https://i.pravatar.cc/120?img=65" alt="Sophie Avatar" style="border-radius: 50%; width: 120px; height: 120px;" />
+            <div>
+                <p>Languages: German, Italian</p>
+                <p>Reviews completed: 62</p>
+                <p>Avg. response: 2.5 days</p>
+            </div>
+            </div>
+            <div class="details-right">
+            <button>View Profile</button>
+            <button>Assign</button>
+            <span class="badge">$20</span>
+            </div>
+        </div>
+        </div>
+
+        <!-- Carlos R. -->
+        <div class="card" onclick="toggleCard(this)">
+        <div class="card-header">
+            <div class="card-title-badges">
+            <span class="card-title">Carlos R.</span>
+            <span class="mini-badge community">Community</span>
+            </div>
+            <span class="rating">⭐ 4.5 (74)</span>
+        </div>
+        <div class="card-details">
+            <div class="details-left" style="display: flex; align-items: center; gap: 1rem;">
+            <img src="https://i.pravatar.cc/120?img=31" alt="Carlos Avatar" style="border-radius: 50%; width: 120px; height: 120px;" />
+            <div>
+                <p>Languages: Spanish, Portuguese</p>
+                <p>Reviews completed: 74</p>
+                <p>Avg. response: 1.8 days</p>
+            </div>
+            </div>
+            <div class="details-right">
+            <button>View Profile</button>
+            <button>Assign</button>
+            <span class="badge">$17</span>
+            </div>
+        </div>
+        </div>
+
+        <!-- Mina L. -->
+        <div class="card" onclick="toggleCard(this)">
+        <div class="card-header">
+            <div class="card-title-badges">
+            <span class="card-title">Mina L.</span>
+            <span class="mini-badge trained">Trained</span>
+            <span class="mini-badge community">Community</span>
+            </div>
+            <span class="rating">⭐ 4.4 (58)</span>
+        </div>
+        <div class="card-details">
+            <div class="details-left" style="display: flex; align-items: center; gap: 1rem;">
+            <img src="https://i.pravatar.cc/120?img=52" alt="Mina Avatar" style="border-radius: 50%; width: 120px; height: 120px;" />
+            <div>
+                <p>Languages: English, Japanese</p>
+                <p>Reviews completed: 58</p>
+                <p>Avg. response: 2.2 days</p>
+            </div>
+            </div>
+            <div class="details-right">
+            <button>View Profile</button>
+            <button>Assign</button>
+            <span class="badge">$19</span>
+            </div>
+        </div>
+        </div>
+
+    </div>
+    </main>
+
+
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const menu = document.getElementById('menu');
+    const backdrop = document.getElementById('backdrop');
+
+    function closeAllModals() {
+      menu.classList.remove('active');
+      backdrop.classList.remove('active');
+      updateHamburgerState();
+    }
+
+    function updateHamburgerState() {
+      const isOpen = menu.classList.contains('active');
+      hamburger.classList.toggle('active', isOpen);
+    }
+
+    hamburger.addEventListener('click', () => {
+      const isOpen = menu.classList.contains('active');
+      if (isOpen) {
+        closeAllModals();
+      } else {
+        menu.classList.add('active');
+        backdrop.classList.add('active');
+        updateHamburgerState();
+      }
+    });
+
+    backdrop.addEventListener('click', closeAllModals);
+
+    function toggleCard(cardElement) {
+      cardElement.classList.toggle('active');
+    }
+  </script>
+</body>
+</html>
