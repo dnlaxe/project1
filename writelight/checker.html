@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Checker Dashboard</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
     *, *::before, *::after {
@@ -13,20 +14,25 @@
     }
 
     :root {
-      --color-bg: #fdf6ee;
-      --color-text: #000000;
+      --color-bg: #d9f2ff;
+      --color-text: #001f3f;
+      --color-cta-bg: #001f3f;
+    }
+
+    html {
+      overflow-y: scroll;
+      scrollbar-gutter: stable;
     }
 
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Lexend', sans-serif;
       color: var(--color-text);
       background-color: var(--color-bg);
-      overflow-x: hidden;
     }
-
+    
     header {
       display: flex;
       justify-content: space-between;
@@ -45,7 +51,7 @@
     .user-name {
       font-size: 1.6rem;
       font-weight: 700;
-      font-family: 'Gabarito', sans-serif;
+      font-family: 'Lexend', sans-serif;
     }
 
     .status-toggle {
@@ -82,7 +88,7 @@
       left: 0;
       width: 100%;
       height: 3px;
-      background-color: #000;
+      background-color: var(--color-text);
       border-radius: 2px;
       transition: transform 0.3s ease, opacity 0.3s ease;
       transform-origin: center;
@@ -129,7 +135,7 @@
       max-width: 320px;
       height: 100%;
       background-color: #ffffff;
-      color: #000000;
+      color: var(--color-text);
       display: flex;
       flex-direction: column;
       padding: 2rem;
@@ -153,58 +159,27 @@
       font-size: 2rem;
       font-weight: 600;
       text-decoration: none;
-      color: #000;
+      color: var(--color-text);
       margin: 1rem 0;
-      font-family: 'Gabarito', sans-serif;
+      font-family: 'Lexend', sans-serif;
     }
 
-    .left-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100%;
-      width: 60%;
-      max-width: 320px;
-      background-color: #fff;
-      transform: translateX(-100%);
-      transition: transform 0.4s ease;
-      z-index: 999;
-      padding: 2rem;
-      padding-top: 2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .left-modal.active {
-      transform: translateX(0%);
-    }
-
-    .left-modal h2 {
-      font-size: 1.5rem;
-      font-family: 'Gabarito', sans-serif;
-      margin-bottom: 1rem;
-    }
-
-    .left-modal input[type="number"] {
-      padding: 0.75rem 1rem;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-
-    .left-modal button {
-      padding: 0.75rem 1rem;
-      font-weight: 600;
-      border: 1px solid black;
+    .logout-button {
+      margin-top: auto;
+      align-self: flex-end;
       background-color: transparent;
-      border-radius: 4px;
+      border: 2px solid var(--color-text);
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
+      border-radius: 40px;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    .left-modal button:hover {
-      background-color: #000;
-      color: white;
+    .logout-button:hover {
+      background-color: var(--color-text);
+      color: #fff;
     }
 
     main {
@@ -214,7 +189,7 @@
     }
 
     h1 {
-      font-family: 'Gabarito', sans-serif;
+      font-family: 'Lexend', sans-serif;
       font-size: 2.5rem;
       font-weight: 600;
       margin-bottom: 1.5rem;
@@ -234,15 +209,11 @@
 
     .card {
       background-color: #fff;
-      border: 2px solid #000;
-      border-radius: 4px;
+      border: 2px solid var(--color-text);
+      border-radius: 40px;
       padding: 1.25rem;
       cursor: pointer;
       transition: background-color 0.3s ease;
-    }
-
-    .card:hover {
-      background-color: #f5f5f5;
     }
 
     .card-header {
@@ -254,7 +225,7 @@
     .card-title {
       font-size: 1.2rem;
       font-weight: 600;
-      font-family: 'Gabarito', sans-serif;
+      font-family: 'Lexend', sans-serif;
     }
 
     .badge {
@@ -309,40 +280,112 @@
       padding: 0.4rem 1rem;
       font-size: 0.9rem;
       font-weight: 600;
-      border: 1px solid #000;
+      border: 2px solid var(--color-text);
       background: transparent;
-      border-radius: 4px;
+      border-radius: 40px;
       cursor: pointer;
       transition: background 0.2s ease;
+      font-family: 'Inter', sans-serif;
     }
 
     .details-right button:hover {
-      background: #000;
+      background: var(--color-text);
       color: #fff;
     }
 
     .countdown {
       font-family: monospace;
-      color: blue;
+      color: #2980b9;
     }
 
-        .logout-button {
-        margin-top: auto;
-        align-self: flex-end;
-        background-color: transparent;
-        border: 1px solid #000;
-        padding: 0.75rem 1.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        border-radius: 4px;
-        transition: background-color 0.3s ease, color 0.3s ease;
-        }
+    .left-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 60%;
+      max-width: 320px;
+      background-color: #fff;
+      transform: translateX(-100%);
+      transition: transform 0.4s ease;
+      z-index: 999;
+      padding: 2rem;
+      padding-top: 5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
 
-        .logout-button:hover {
-        background-color: #000;
-        color: #fff;
-        }
+    .left-modal.active {
+      transform: translateX(0%);
+    }
+
+    .left-modal h2,
+    .left-modal h3 {
+      font-family: 'Lexend', sans-serif;
+    }
+
+    .left-modal input[type="number"] {
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .left-modal button {
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      border: 2px solid var(--color-text);
+      background-color: transparent;
+      border-radius: 40px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .left-modal button:hover {
+      background-color: var(--color-text);
+      color: white;
+    }
+
+    .left-modal .unavailable-button {
+      border: 2px solid red !important;
+      color: red !important;
+      background-color: transparent !important;
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      margin-top: 1rem;
+    }
+
+    .left-modal .unavailable-button:hover {
+      background-color: red !important;
+      color: white !important;
+    }
+
+    .left-modal p {
+      font-size: 1rem;
+      margin: 0 0 0.2rem 0;
+    }
+
+    .left-modal .available-button {
+      border: 2px solid green !important;
+      color: green !important;
+      background-color: transparent !important;
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      margin-top: 1rem;
+    }
+
+    .left-modal .available-button:hover {
+      background-color: green !important;
+      color: white !important;
+    }
+
 
     @media (max-width: 600px) {
       header {
@@ -365,6 +408,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <header>
@@ -394,7 +438,7 @@
   <div class="left-modal" id="statusModal"></div>
 
   <main>
-    <h1>Your Assigned Reviews</h1>
+    <h1>Your Assigned Tasks</h1>
     <p>Here you’ll see all writing pieces currently assigned to you. Track deadlines and manage progress.</p>
 
     <div class="cards-container">
@@ -411,8 +455,8 @@
             <p><strong>Assigned By:</strong> Admin</p>
           </div>
           <div class="details-right">
-            <button>Complete</button>
-            <button>Reassign</button>
+            <button>Check</button>
+            <button>Upload</button>
           </div>
         </div>
       </div>
@@ -429,8 +473,6 @@
       <p><strong>Assigned By:</strong> Reviewer 1</p>
     </div>
     <div class="details-right">
-      <button>Complete</button>
-      <button>Reassign</button>
     </div>
   </div>
     </div>
@@ -447,8 +489,6 @@
         <p><strong>Assigned By:</strong> Admin</p>
         </div>
         <div class="details-right">
-        <button>Complete</button>
-        <button>Reassign</button>
         </div>
     </div>
     </div>
@@ -499,17 +539,40 @@
 
       if (isGoingAvailable) {
         html = `
-          <h2>Set Task Capacity</h2>
-          <label for="taskCount">Number of tasks willing to accept:</label>
-          <input type="number" id="taskCount" min="1" placeholder="e.g. 5" />
-          <button onclick="confirmAvailability()">Confirm</button>
+        <label for="taskCount">Number of tasks willing to accept:</label>
+        <input type="number" id="taskCount" min="1" placeholder="e.g. 5" />
+
+        <label for="minWords">Minimum words per task:</label>
+        <input type="number" id="minWords" min="0" placeholder="e.g. 300" />
+
+        <label for="maxWords">Maximum words per task:</label>
+        <input type="number" id="maxWords" min="0" placeholder="e.g. 1000" />
+
+        <label for="turnaround">Turnaround time (in hours):</label>
+        <input type="number" id="turnaround" min="1" placeholder="e.g. 24" />
+
+        <button class="available-button" onclick="confirmAvailability()">Become Available</button>
+
         `;
-      } else {
-        html = `
-          <h2>Update Availability</h2>
-          <button onclick="becomeUnavailable()">Become Unavailable</button>
-        `;
-      }
+
+} else {
+  if (currentTaskLimit) {
+html = `
+  <h2>Your Current Availability</h2>
+  <label><strong>Tasks:</strong> ${currentTaskLimit.taskCount}</label>
+  <label><strong>Min Words:</strong> ${currentTaskLimit.minWords}</label>
+  <label><strong>Max Words:</strong> ${currentTaskLimit.maxWords}</label>
+  <label><strong>Turnaround:</strong> ${currentTaskLimit.turnaround} hour(s)</label>
+  <button class="unavailable-button" onclick="becomeUnavailable()">Become Unavailable</button>
+`;
+
+  } else {
+    html = `
+      <p>You are not currently marked as available.</p>
+      <button onclick="becomeUnavailable()">Become Unavailable</button>
+    `;
+  }
+}
 
       statusModal.innerHTML = html;
       statusModal.classList.add('active');
@@ -517,17 +580,37 @@
     }
 
     function confirmAvailability() {
-      const taskCount = document.getElementById('taskCount').value;
-      if (!taskCount || taskCount <= 0) {
+    const taskCount = document.getElementById('taskCount').value;
+    const minWords = document.getElementById('minWords').value;
+    const maxWords = document.getElementById('maxWords').value;
+    const turnaround = document.getElementById('turnaround').value;
+
+    if (!taskCount || taskCount <= 0) {
         alert("Please enter a valid number of tasks.");
         return;
-      }
+    }
 
-      currentTaskLimit = taskCount;
-      toggleButton.classList.add('active');
-      toggleButton.textContent = taskCount;
-      alert(`You are now available for ${taskCount} task(s).`);
-      closeAllModals();
+    if (!minWords || !maxWords || minWords <= 0 || maxWords <= 0 || Number(minWords) > Number(maxWords)) {
+        alert("Please enter valid word limits. Max must be greater than Min.");
+        return;
+    }
+
+    if (!turnaround || turnaround <= 0) {
+        alert("Please enter a valid turnaround time.");
+        return;
+    }
+
+    currentTaskLimit = {
+        taskCount,
+        minWords,
+        maxWords,
+        turnaround
+    };
+
+    toggleButton.classList.add('active');
+    toggleButton.textContent = taskCount;
+    alert(`You are now available for ${taskCount} task(s).\nMin Words: ${minWords}\nMax Words: ${maxWords}\nTurnaround: ${turnaround}h`);
+    closeAllModals();
     }
 
     function becomeUnavailable() {
