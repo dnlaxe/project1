@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin – Payments</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --color-text: #001f3f;
+      --color-bg: #ffffff;
+      --color-light: #f4f4f4;
+      --status-pending: #f39c12;
+      --status-captured: #27ae60;
+      --status-expired: #e74c3c;
+      --status-refunded: #3498db;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Lexend', sans-serif;
+      color: var(--color-text);
+      background-color: var(--color-bg);
+    }
+
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 2px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .back-link {
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--color-text);
+      border: 2px solid var(--color-text);
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      transition: background 0.2s ease;
+    }
+
+    .back-link:hover {
+      background: var(--color-text);
+      color: white;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: auto;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .filters input,
+    .filters select {
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 0.9rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+      font-size: 0.95rem;
+    }
+
+    th {
+      font-weight: 600;
+      background-color: var(--color-light);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 6px;
+      color: white;
+    }
+
+    .pending { background-color: var(--status-pending); }
+    .captured { background-color: var(--status-captured); }
+    .refunded { background-color: var(--status-refunded); }
+    .expired { background-color: var(--status-expired); }
+
+    .action-btn {
+      padding: 0.4rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 40px;
+      border: 2px solid var(--color-text);
+      background: transparent;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--color-text);
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        margin-bottom: 1.5rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        background-color: #fafafa;
+      }
+
+      td {
+        padding: 0.5rem 0;
+      }
+
+      td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 0.3rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="user-name">Manage Payments</div>
+    <a href="/admin/dashboard" class="back-link">Back to Dashboard</a>
+  </header>
+
+  <main>
+    <h1>Payment Overview</h1>
+
+    <div class="filters">
+      <input type="text" placeholder="Search by ID or Writer…" />
+      <select>
+        <option>Filter: All</option>
+        <option>Pending</option>
+        <option>Captured</option>
+        <option>Refunded</option>
+        <option>Expired</option>
+      </select>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Submission</th>
+          <th>Writer</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Last Updated</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-label="Submission">#721</td>
+          <td data-label="Writer">Alex M.</td>
+          <td data-label="Amount">$12.00</td>
+          <td data-label="Status"><span class="status-badge pending">Pending</span></td>
+          <td data-label="Last Updated">July 9, 2025</td>
+          <td data-label="Actions">
+            <button class="action-btn">Capture</button>
+            <button class="action-btn">Expire</button>
+          </td>
+        </tr>
+        <tr>
+          <td data-label="Submission">#718</td>
+          <td data-label="Writer">Jamie L.</td>
+          <td data-label="Amount">$18.00</td>
+          <td data-label="Status"><span class="status-badge captured">Captured</span></td>
+          <td data-label="Last Updated">July 7, 2025</td>
+          <td data-label="Actions">
+            <button class="action-btn">Refund</button>
+          </td>
+        </tr>
+        <tr>
+          <td data-label="Submission">#709</td>
+          <td data-label="Writer">Samira B.</td>
+          <td data-label="Amount">$15.00</td>
+          <td data-label="Status"><span class="status-badge refunded">Refunded</span></td>
+          <td data-label="Last Updated">July 6, 2025</td>
+          <td data-label="Actions"></td>
+        </tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

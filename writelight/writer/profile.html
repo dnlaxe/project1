@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checker Profile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --color-bg: #d9f2ff;
+      --color-text: #001f3f;
+      --color-cta-bg: #001f3f;
+      --color-cta-text: #ffffff;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      overflow-y: scroll;
+      scrollbar-gutter: stable;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Lexend', sans-serif;
+      color: var(--color-text);
+      background-color: var(--color-bg);
+    }
+
+    header {
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .user-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .back-link {
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--color-text);
+      font-size: 1rem;
+      border: 2px solid var(--color-text);
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      transition: background 0.2s ease;
+    }
+
+    .back-link:hover {
+      background: var(--color-text);
+      color: #fff;
+    }
+
+    main {
+      max-width: 1000px;
+      padding: 2rem;
+      padding-bottom: 6rem;
+      margin: auto;
+    }
+
+    .profile-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .profile-header img.profile-photo {
+      border-radius: 50%;
+      width: 140px;
+      height: 140px;
+      border: 3px solid var(--color-text);
+    }
+
+    .name-line {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .name-line h2 {
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    .name-line .flag {
+      width: 24px;
+      height: 24px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+    }
+
+    .rating-line {
+      font-size: 1rem;
+    }
+
+    .profile-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      align-items: center;
+      text-align: center;
+    }
+
+    .mini-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 8px;
+      color: #fff;
+      background-color: #888;
+      text-transform: uppercase;
+    }
+
+    .trusted { background-color: #2ecc71; }
+    .trained { background-color: #3498db; }
+    .community { background-color: #9b59b6; }
+    .favorited { background-color: #ff69b4; }
+
+    .section {
+      margin-top: 2rem;
+    }
+
+    .section h3 {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section p {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .review {
+      background: #ffffff;
+      border: 2px solid var(--color-text);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .review strong {
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="user-name">Checker Profile</div>
+    <a href="dashboard.html" class="back-link">Back</a>
+  </header>
+
+  <main>
+    <div class="profile-header">
+      <img src="https://i.pravatar.cc/140?img=48" alt="Julia A." class="profile-photo" />
+
+      <div class="name-line">
+        <img
+          src="https://flagcdn.com/w40/us.png"
+          srcset="https://flagcdn.com/w80/us.png 2x"
+          alt="United States"
+          class="flag" />
+        <h2>Julia A.</h2>
+      </div>
+
+      <div class="rating-line">⭐ 4.7 (87 reviews)</div>
+
+      <div class="profile-meta">
+        <div>Languages: English, Spanish</div>
+        <div>Reliability score: <strong>98</strong>%</div>
+        <div>Favorited <strong>14</strong> times</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>
+        About Julia
+        <span class="mini-badge favorited">Favorited</span>
+      </h3>
+      <p>
+        Hi! I'm Julia. I love helping students become more confident in English. Whether it's homework, a story, or a class project, I'm here to support you with kind and helpful feedback. I make sure every suggestion is easy to understand — and even a little fun!
+      </p>
+    </div>
+
+    <div class="section">
+      <h3>
+        Qualifications
+        <span class="mini-badge trusted">Trusted</span>
+        <span class="mini-badge trained">Trained</span>
+      </h3>
+      <p>
+        - Degree in Language Studies (University of Barcelona)<br />
+        - Certified Translator (English-Spanish)<br />
+        - Training in proofreading and working with kids
+      </p>
+    </div>
+
+    <div class="section">
+      <h3>
+        Experience
+        <span class="mini-badge trusted">Trusted</span>
+      </h3>
+      <p>
+        I've worked with hundreds of young learners just like you! From stories and reports to book summaries and letters, I've helped students write more clearly and feel proud of their work.
+      </p>
+    </div>
+
+    <div class="section">
+      <h3>Intro Video</h3>
+      <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; border: 2px solid var(--color-text);">
+        <iframe 
+          src="https://www.youtube.com/embed/YOUR_VIDEO_ID" 
+          title="Julia's Introduction Video" 
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+          frameborder="0" 
+          allowfullscreen>
+        </iframe>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>What Students Say</h3>
+
+      <div class="review">
+        <strong>Anna T.</strong>
+        “Julia helped me make my story sound smoother. She also explained the grammar in a way I could understand!”
+      </div>
+
+      <div class="review">
+        <strong>David M.</strong>
+        “Thanks to Julia, I got a better grade on my report. She’s very nice and fast too.”
+      </div>
+
+      <div class="review">
+        <strong>Maya L.</strong>
+        “Her comments helped me fix my mistakes and learn new words. I like how she encourages me.”
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

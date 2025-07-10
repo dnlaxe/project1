@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --color-text: #001f3f;
+      --color-accent: #0074D9;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Lexend', sans-serif;
+      color: var(--color-text);
+      background-color: #ffffff;
+    }
+
+    header {
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #eee;
+    }
+
+    .user-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .logout-button {
+      font-size: 1rem;
+      padding: 0.5rem 1.25rem;
+      font-weight: 600;
+      background: transparent;
+      border: 2px solid var(--color-text);
+      border-radius: 40px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .logout-button:hover {
+      background-color: var(--color-text);
+      color: white;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: auto;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .metric-box {
+      border: 2px solid var(--color-text);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .metric-box h2 {
+      font-size: 2rem;
+      margin: 0;
+    }
+
+    .metric-box p {
+      margin: 0.5rem 0 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .quick-links {
+      margin-bottom: 3rem;
+    }
+
+    .quick-links h2 {
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+    }
+
+    .link-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .link-card {
+      border: 2px solid var(--color-text);
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      color: var(--color-text);
+      transition: background 0.2s ease;
+    }
+
+    .link-card:hover {
+      background-color: var(--color-text);
+      color: white;
+    }
+
+    .activity-feed h2 {
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+    }
+
+    .activity-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .activity-list li {
+      padding: 0.75rem 1rem;
+      border-left: 4px solid var(--color-accent);
+      background-color: #f8f8f8;
+      font-size: 0.95rem;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="user-name">Admin Dashboard</div>
+    <button class="logout-button">Log Out</button>
+  </header>
+
+  <main>
+    <h1>Platform Overview</h1>
+
+    <section class="metrics">
+      <div class="metric-box">
+        <h2>384</h2>
+        <p>Total Writers</p>
+      </div>
+      <div class="metric-box">
+        <h2>76</h2>
+        <p>Checkers</p>
+      </div>
+      <div class="metric-box">
+        <h2>121</h2>
+        <p>Tasks This Week</p>
+      </div>
+      <div class="metric-box">
+        <h2>$4,510</h2>
+        <p>Revenue This Month</p>
+      </div>
+    </section>
+
+    <section class="quick-links">
+      <h2>Quick Access</h2>
+      <div class="link-grid">
+        <a href="/admin/checker-applications" class="link-card">Checker Applications</a>
+        <a href="/admin/jobs" class="link-card">Manage Tasks</a>
+        <a href="/admin/payments" class="link-card">Payment Management</a>
+        <a href="/admin/users" class="link-card">All Users</a>
+      </div>
+    </section>
+
+    <section class="activity-feed">
+      <h2>Recent Activity</h2>
+      <ul class="activity-list">
+        <li>New checker application: <strong>Sophie B.</strong></li>
+        <li>Payment captured for submission #721</li>
+        <li>Submission #718 expired (Checker no-show)</li>
+        <li>Refund issued for submission #709</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

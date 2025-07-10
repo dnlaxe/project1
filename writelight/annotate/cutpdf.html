@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fast PDF Editor (PDF to PNG)</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      overflow-x: hidden;
+    }
+    .toolbar {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    #canvasWrapper {
+      margin-top: 60px;
+      position: relative;
+      padding-bottom: 100px;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: auto;
+    }
+    button {
+      padding: 5px 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+    }
+    button:disabled {
+      background: #ccc;
+    }
+    #hoverLine {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: red;
+      pointer-events: none;
+      display: none;
+      z-index: 5;
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+  </script>
+</head>
+<body>
+
+  <div class="toolbar">
+    <input type="file" id="fileInput" accept=".pdf" />
+    <button id="undoBtn" disabled>↩️ Undo</button>
+    <button id="restartBtn">🔄 Restart</button>
+  </div>
+
+  <div id="canvasWrapper">
+    <canvas id="mainCanvas"></canvas>
+    <div id="hoverLine"></div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const undoBtn = document.getElementById('undoBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const hoverLine = document.getElementById('hoverLine');
+
+    let baseImageData = null;
+    let drawHistory = [];
+    let isInserting = false;
+    let insertStartY = 0;
+    let insertImageData = null;
+
+    const renderScale = 2;
+
+    fileInput.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file || file.type !== 'application/pdf') return;
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+      const pageCanvases = [];
+
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: renderScale });
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        await page.render({ canvasContext: tempCtx, viewport }).promise;
+        pageCanvases.push(tempCanvas);
+      }
+
+      // Combine into one image canvas
+      const totalHeight = pageCanvases.reduce((sum, c) => sum + c.height, 0);
+      const fullCanvas = document.createElement('canvas');
+      fullCanvas.width = pageCanvases[0].width;
+      fullCanvas.height = totalHeight;
+      const fullCtx = fullCanvas.getContext('2d');
+
+      let yOffset = 0;
+      for (const pc of pageCanvases) {
+        fullCtx.drawImage(pc, 0, yOffset);
+        yOffset += pc.height;
+      }
+
+      // Convert to PNG and load as image
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = window.innerWidth;
+        const aspect = img.width / img.height;
+        canvas.height = Math.round(canvas.width / aspect);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        drawHistory = [baseImageData];
+        undoBtn.disabled = true;
+        hoverLine.style.display = 'block';
+      };
+      img.src = fullCanvas.toDataURL('image/png');
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      if (!baseImageData) return;
+
+      // Move guide line
+      const rect = canvas.getBoundingClientRect();
+      hoverLine.style.top = `${e.clientY - rect.top}px`;
+
+      if (isInserting) {
+        const insertCurrentY = e.offsetY;
+        const gap = Math.max(0, insertCurrentY - insertStartY);
+        ctx.putImageData(baseImageData, 0, 0);
+        if (gap > 0) {
+          canvas.height = baseImageData.height + gap;
+          ctx.putImageData(baseImageData, 0, 0);
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, insertStartY, canvas.width, gap);
+          ctx.putImageData(insertImageData, 0, insertStartY + gap);
+        }
+      }
+    });
+
+    canvas.addEventListener('mousedown', e => {
+      if (!baseImageData) return;
+      isInserting = true;
+      insertStartY = e.offsetY;
+      insertImageData = ctx.getImageData(0, insertStartY, canvas.width, canvas.height - insertStartY);
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      if (!isInserting) return;
+      isInserting = false;
+
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        drawHistory.push(baseImageData);
+        undoBtn.disabled = false;
+      };
+      img.src = canvas.toDataURL('image/png');
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      hoverLine.style.display = 'none';
+    });
+
+    canvas.addEventListener('mouseenter', () => {
+      if (baseImageData) hoverLine.style.display = 'block';
+    });
+
+    undoBtn.addEventListener('click', () => {
+      if (drawHistory.length <= 1) return;
+      drawHistory.pop();
+      const prev = drawHistory[drawHistory.length - 1];
+      canvas.width = prev.width;
+      canvas.height = prev.height;
+      ctx.putImageData(prev, 0, 0);
+      baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      if (drawHistory.length <= 1) undoBtn.disabled = true;
+    });
+
+    restartBtn.addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 1;
+      canvas.height = 1;
+      baseImageData = null;
+      drawHistory = [];
+      isInserting = false;
+      fileInput.value = '';
+      undoBtn.disabled = true;
+      hoverLine.style.display = 'none';
+    });
+  </script>
+
+</body>
+</html>

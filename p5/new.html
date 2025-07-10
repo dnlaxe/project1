@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Verb Tense Transformer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.dom.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <script>
+    let verbInput;
+    let button;
+    let tenseForms = {};
+
+    function setup() {
+      createCanvas(600, 400);
+      textAlign(CENTER, CENTER);
+      textSize(24);
+
+      // Create input and button
+      verbInput = createInput('');
+      verbInput.position(20, 20);
+
+      button = createButton('Transform');
+      button.position(verbInput.x + verbInput.width + 10, 20);
+      button.mousePressed(transformVerb);
+    }
+
+    function draw() {
+      background(240);
+
+      fill(0);
+      text("Verb Tense Transformer", width / 2, 80);
+
+      if (tenseForms.base) {
+        text(`Present: ${tenseForms.base}`, width / 2, 150);
+        text(`Past: ${tenseForms.past}`, width / 2, 200);
+        text(`Future: will ${tenseForms.base}`, width / 2, 250);
+      }
+    }
+
+    function transformVerb() {
+      let verb = verbInput.value().trim().toLowerCase();
+      if (verb.length === 0) return;
+
+      tenseForms = {
+        base: verb,
+        past: getPastTense(verb)
+      };
+    }
+
+    // Very basic rules + a few irregulars
+    function getPastTense(verb) {
+      const irregulars = {
+        go: "went",
+        eat: "ate",
+        run: "ran",
+        have: "had",
+        be: "was",
+        do: "did",
+        make: "made",
+        see: "saw",
+        say: "said",
+        get: "got"
+      };
+
+      if (irregulars[verb]) return irregulars[verb];
+
+      // Rule for regular verbs
+      if (verb.endsWith('e')) return verb + "d";
+      if (verb.endsWith('y')) return verb.slice(0, -1) + "ied";
+      return verb + "ed";
+    }
+  </script>
+</body>
+</html>

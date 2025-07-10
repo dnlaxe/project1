@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin – Manage Jobs</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --color-text: #001f3f;
+      --color-bg: #ffffff;
+      --color-accent: #0074D9;
+      --color-light: #f4f4f4;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Lexend', sans-serif;
+      color: var(--color-text);
+      background-color: var(--color-bg);
+    }
+
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 2px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .back-link {
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--color-text);
+      border: 2px solid var(--color-text);
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      transition: background 0.2s ease;
+    }
+
+    .back-link:hover {
+      background: var(--color-text);
+      color: white;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: auto;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .filters {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .filters input,
+    .filters select {
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background-color: var(--color-light);
+    }
+
+    th, td {
+      padding: 0.9rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+      font-size: 0.95rem;
+    }
+
+    th {
+      font-weight: 600;
+    }
+
+    .status-unassigned {
+      background-color: #f39c12;
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    .status-overdue {
+      background-color: #e74c3c;
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    .action-btn {
+      padding: 0.4rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 40px;
+      border: 2px solid var(--color-text);
+      background: transparent;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: background 0.2s ease;
+      margin-right: 0.5rem;
+    }
+
+    .action-btn:hover {
+      background: var(--color-text);
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        margin-bottom: 1.5rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        background-color: #fafafa;
+      }
+
+      td {
+        padding: 0.5rem 0;
+      }
+
+      td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 0.3rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="user-name">Manage Submissions</div>
+    <a href="/admin/dashboard" class="back-link">Back</a>
+  </header>
+
+  <main>
+    <h1>Tasks</h1>
+
+    <div class="filters">
+      <input type="text" placeholder="Search by Writer or Checker" />
+      <select>
+        <option>Filter: All</option>
+        <option>Unassigned Only</option>
+        <option>In Progress Only</option>
+        <option>Complete Only</option>
+        <option>Expired Only</option>
+      </select>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Writer</th>
+          <th>Checker</th>
+          <th>Words</th>
+          <th>Deadline</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-label="Title">Submission #721</td>
+          <td data-label="Status"><span class="status-unassigned">Unassigned</span></td>
+          <td data-label="Writer">Alex M.</td>
+          <td data-label="Checker"></td>
+          <td data-label="Words">842</td>
+          <td data-label="Deadline">July 15, 2025</td>
+          <td data-label="Action"><button class="action-btn">View PDF</button></td>
+        </tr>
+
+        <tr>
+          <td data-label="Title">Submission #718</td>
+          <td data-label="Status"><span class="status-overdue">Expired</span></td>
+          <td data-label="Writer">Jamie L.</td>
+          <td data-label="Checker">Thom</td>
+          <td data-label="Words">902</td>
+          <td data-label="Deadline">July 8, 2025</td>
+          <td data-label="Action"><button class="action-btn">View PDF</button></td>
+        </tr>
+
+                <tr>
+          <td data-label="Title">Submission #721</td>
+          <td data-label="Status"><span class="status-unassigned">In progress</span></td>
+          <td data-label="Writer">Alex M.</td>
+          <td data-label="Checker">Dominic</td>
+          <td data-label="Words">842</td>
+          <td data-label="Deadline">July 15, 2025</td>
+          <td data-label="Action"><button class="action-btn">View PDF</button></td>
+        </tr>
+
+                <tr>
+          <td data-label="Title">Submission #721</td>
+          <td data-label="Status"><span class="status-unassigned">Complete</span></td>
+          <td data-label="Writer">Alex M.</td>
+          <td data-label="Checker">Jessica</td>
+          <td data-label="Words">842</td>
+          <td data-label="Deadline">July 15, 2025</td>
+          <td data-label="Action"><button class="action-btn">View PDF</button><button class="action-btn">View Video</button></td>
+        </tr>
+
+        <!-- More rows can follow -->
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

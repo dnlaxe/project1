@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend&display=swap" rel="stylesheet">
+  <title>Insert Space Tool with Guide Line</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: #f0f0f0;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      font-family: 'Lexend', sans-serif;
+    }
+    .toolbar {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      z-index: 10;
+      border-radius: 40px;
+      border: 1px solid black;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: auto;
+    }
+    .canvas-wrapper {
+      margin-top: 60px;
+      position: relative;
+    }
+    button {
+      padding: 5px 10px;
+      font-size: 16px;
+      border-radius: 40px;
+      border: 1px solid black;
+      cursor: pointer;
+      background: white;
+      color: black;
+    }
+
+    #hoverLine {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background-color: navy;
+      pointer-events: none;
+      display: none;
+      z-index: 5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <input type="file" id="fileInput" accept="image/*" />
+    <span>Click and drag down to insert space</span>
+    <button id="undoBtn" disabled>Undo</button>
+    <button id="restartBtn" disabled>Restart</button>
+    <button id="doneBtn" disabled>Done</button>
+  </div>
+
+  <div class="canvas-wrapper">
+    <canvas id="canvas"></canvas>
+    <div id="hoverLine"></div> <!-- NEW -->
+  </div>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const undoBtn = document.getElementById('undoBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const doneBtn = document.getElementById('doneBtn');
+  const hoverLine = document.getElementById('hoverLine');
+
+  let image = null;
+  let isInserting = false;
+  let insertStartY = null;
+  let insertImageData = null;
+  let scale = 1;
+  let baseImageData = null;
+  let originalImageData = null;
+  const drawHistory = [];
+
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = evt => {
+      image = new Image();
+      image.onload = () => {
+        const naturalWidth = image.width;
+        const naturalHeight = image.height;
+
+        canvas.width = window.innerWidth;
+        scale = canvas.width / naturalWidth;
+        canvas.height = Math.floor(naturalHeight * scale);
+
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        drawHistory.length = 0;
+        drawHistory.push(baseImageData);
+        undoBtn.disabled = true;
+        restartBtn.disabled = false;
+        doneBtn.disabled = false;
+        hoverLine.style.display = 'block';
+      };
+      image.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  canvas.addEventListener('mousedown', e => {
+    if (!baseImageData) return;
+    insertStartY = e.offsetY;
+    isInserting = true;
+    insertImageData = ctx.getImageData(0, insertStartY, canvas.width, canvas.height - insertStartY);
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    if (!baseImageData) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseY = e.clientY - rect.top;
+    hoverLine.style.top = mouseY + 'px';
+
+    if (!isInserting) return;
+
+    const insertCurrentY = e.offsetY;
+    const gap = Math.max(0, insertCurrentY - insertStartY);
+    ctx.putImageData(baseImageData, 0, 0);
+
+    if (gap > 0) {
+      canvas.height = baseImageData.height + gap;
+      ctx.putImageData(baseImageData, 0, 0);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, insertStartY, canvas.width, gap);
+      ctx.putImageData(insertImageData, 0, insertStartY + gap);
+    }
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    hoverLine.style.display = 'none';
+  });
+
+  canvas.addEventListener('mouseenter', () => {
+    if (baseImageData) hoverLine.style.display = 'block';
+  });
+
+  canvas.addEventListener('mouseup', () => {
+    if (!isInserting) return;
+    isInserting = false;
+
+    const newImg = new Image();
+    newImg.onload = () => {
+      canvas.height = newImg.height;
+      ctx.drawImage(newImg, 0, 0, canvas.width, canvas.height);
+      baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      drawHistory.push(baseImageData);
+      undoBtn.disabled = false;
+    };
+    newImg.src = canvas.toDataURL('image/png');
+  });
+
+  undoBtn.addEventListener('click', () => {
+    if (drawHistory.length <= 1) return;
+
+    drawHistory.pop();
+    const last = drawHistory[drawHistory.length - 1];
+    canvas.width = last.width;
+    canvas.height = last.height;
+    ctx.putImageData(last, 0, 0);
+    baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    if (drawHistory.length <= 1) undoBtn.disabled = true;
+  });
+
+  restartBtn.addEventListener('click', () => {
+    if (!originalImageData) return;
+
+    canvas.width = originalImageData.width;
+    canvas.height = originalImageData.height;
+    ctx.putImageData(originalImageData, 0, 0);
+    baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    drawHistory.length = 0;
+    drawHistory.push(baseImageData);
+    undoBtn.disabled = true;
+  });
+
+  doneBtn.addEventListener('click', () => {
+    const dataURL = canvas.toDataURL('image/png');
+    const newTab = window.open();
+    if (newTab) {
+      newTab.document.body.style.margin = '0';
+      const img = newTab.document.createElement('img');
+      img.src = dataURL;
+      img.style.width = '100%';
+      img.style.display = 'block';
+      newTab.document.body.appendChild(img);
+    } else {
+      alert('Popup blocked! Please allow popups for this site.');
+    }
+  });
+</script>
+
+
+</body>
+</html>

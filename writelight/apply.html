@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apply to be a Checker – WriteLight</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: 'Lexend', sans-serif;
+      background-color: #d9f2ff;
+      color: #001f3f;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p.description {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+
+    .card-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      justify-content: center;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.5rem;
+      border: 2px solid #001f3f;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 420px;
+      flex: 1 1 300px;
+      box-sizing: border-box;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      flex-grow: 1;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+
+    .card button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 40px;
+      border: 2px solid #001f3f;
+      background: transparent;
+      color: #001f3f;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .card button:hover {
+      background: #001f3f;
+      color: white;
+    }
+
+    .consent {
+      margin-top: 3rem;
+      text-align: center;
+    }
+
+    .consent label {
+      font-size: 0.95rem;
+    }
+
+    .cta-container {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    .cta-button {
+      background-color: #001f3f;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    .cta-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>Before You Apply</h1>
+  <p class="description">Please review the following requirements. When you're ready, you can begin your checker application.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <h3>Is your language open?</h3>
+      <p>Before applying, check if your teaching language is currently open for applications.</p>
+      <button>Check Language List</button>
+    </div>
+
+    <div class="card">
+      <h3>Prepare a video introduction</h3>
+      <p>Record a short video to introduce yourself and showcase your feedback style.</p>
+      <button>View Video Tips</button>
+    </div>
+
+    <div class="card">
+      <h3>Understand reliability standards</h3>
+      <p>Checkers are expected to complete tasks on time. Learn what's expected before applying.</p>
+      <button>View Expectations</button>
+    </div>
+
+    <div class="card">
+      <h3>Have the right tools</h3>
+      <p>You'll need a microphone, screen recording software, and the ability to annotate PDFs in browser.</p>
+      <button>See Requirements</button>
+    </div>
+
+    <div class="card">
+      <h3>Review payment process</h3>
+      <p>Understand how and when you’ll be paid for completed feedback sessions.</p>
+      <button>Payment Info</button>
+    </div>
+
+    <div class="card">
+      <h3>Get familiar with the platform</h3>
+      <p>Take a quick tour of the WriteLight interface to understand how tasks are assigned and completed.</p>
+      <button>Platform Tour</button>
+    </div>
+  </div>
+
+  <div class="consent">
+    <input type="checkbox" id="agree" />
+    <label for="agree">I’ve reviewed all requirements and I’m ready to apply.</label>
+  </div>
+
+  <div class="cta-container">
+    <button id="startApplication" class="cta-button" disabled>Start Your Application</button>
+  </div>
+
+  <script>
+    const checkbox = document.getElementById('agree');
+    const startBtn = document.getElementById('startApplication');
+
+    checkbox.addEventListener('change', () => {
+      startBtn.disabled = !checkbox.checked;
+    });
+  </script>
+</body>
+</html>

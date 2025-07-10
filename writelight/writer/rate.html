@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rate Your Checker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --color-bg: #d9f2ff;
+      --color-text: #001f3f;
+      --color-cta-bg: #001f3f;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      overflow-y: scroll;
+      scrollbar-gutter: stable;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Lexend', sans-serif;
+      color: var(--color-text);
+      background-color: var(--color-bg);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 2rem;
+    }
+
+    .user-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .back-link {
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--color-text);
+      font-size: 1rem;
+      border: 2px solid var(--color-text);
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      transition: background 0.2s ease;
+    }
+
+    .back-link:hover {
+      background: var(--color-text);
+      color: #fff;
+    }
+
+    main {
+      max-width: 600px;
+      margin: auto;
+      padding: 2rem;
+      padding-bottom: 6rem;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .checker-preview {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .checker-preview img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px solid var(--color-text);
+    }
+
+    .checker-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .checker-info strong {
+      font-size: 1.2rem;
+    }
+
+    .stars {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+
+    .stars span {
+      color: #ccc;
+      transition: color 0.2s ease;
+    }
+
+    .stars span.selected {
+      color: #f39c12;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 1rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: vertical;
+      margin-bottom: 1.5rem;
+    }
+
+    button.submit-btn {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: 2px solid var(--color-text);
+      background-color: transparent;
+      color: var(--color-text);
+      border-radius: 40px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    button.submit-btn:hover {
+      background-color: var(--color-text);
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="user-name">Rate Your Checker</div>
+    <a href="#" class="back-link">Back</a>
+  </header>
+
+  <main>
+    <h1>How was your experience?</h1>
+
+    <div class="checker-preview">
+      <img src="https://i.pravatar.cc/120?img=48" alt="Checker photo"/>
+      <div class="checker-info">
+        <strong>Julia A.</strong>
+      </div>
+    </div>
+
+    <div class="stars" id="starContainer">
+      <span data-value="1">★</span>
+      <span data-value="2">★</span>
+      <span data-value="3">★</span>
+      <span data-value="4">★</span>
+      <span data-value="5">★</span>
+    </div>
+
+    <textarea placeholder="Optional comments..."></textarea>
+
+    <button class="submit-btn">Submit Rating</button>
+  </main>
+
+  <script>
+    const stars = document.querySelectorAll('#starContainer span');
+    stars.forEach(star => {
+      star.addEventListener('click', () => {
+        const value = parseInt(star.dataset.value);
+        stars.forEach(s => s.classList.toggle('selected', parseInt(s.dataset.value) <= value));
+      });
+    });
+  </script>
+</body>
+</html>

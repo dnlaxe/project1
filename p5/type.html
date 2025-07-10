@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>The Daily Type — Repelling Letters!</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Libre+Baskerville&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: white;
+      overflow: hidden;
+      font-family: 'Libre Baskerville', serif;
+      height: 100%;
+      width: 100%;
+    }
+
+    .newspaper-title {
+      position: absolute;
+      top: 30px;
+      width: 100%;
+      text-align: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      color: black;
+      z-index: 10;
+    }
+
+    .subhead {
+      position: absolute;
+      top: 90px;
+      width: 100%;
+      text-align: center;
+      font-size: 16px;
+      font-style: italic;
+      color: #444;
+      z-index: 10;
+    }
+
+    .letter {
+      position: absolute;
+      font-size: 18px;
+      font-family: 'Libre Baskerville', serif;
+      user-select: none;
+      pointer-events: none;
+      color: black;
+      white-space: pre;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="newspaper-title">THE DAILY TYPE</div>
+  <div class="subhead">Typography in Revolt!</div>
+
+  <script>
+    let letters = [];
+    const articleText = `
+LETTERS ON THE LOOSE: 'REPEL' ESCAPES THE PAGE
+
+In an unprecedented phenomenon baffling typographers worldwide, the word “REPEL” has seemingly broken free from its printed confinement. Witnesses claim the letters visibly shift, dodge, and flee whenever approached by readers' fingers or cursors. Experts are investigating whether this could be a new form of kinetic typography — or something more mysterious.
+
+“It was like the page was alive,” said one startled reader. “I moved my mouse, and the letters scattered like they were afraid of me.” While some believe it's an elaborate digital prank, others suspect a deeper symbolic meaning — a typographic rebellion. For now, the world watches in awe as this word continues to resist control.
+    `;
+
+    function setup() {
+      createCanvas(windowWidth, windowHeight);
+      textFont("Libre Baskerville");
+      textSize(18);
+      layoutText(articleText.trim());
+    }
+
+    function layoutText(txt) {
+      const marginX = 80;
+      const startY = 150;
+      const maxWidth = windowWidth - marginX * 2;
+      const lineHeight = 26;
+      let x = marginX;
+      let y = startY;
+
+      for (let i = 0; i < txt.length; i++) {
+        let char = txt[i];
+
+        if (char === '\n') {
+          x = marginX;
+          y += lineHeight;
+          continue;
+        }
+
+        let w = textWidth(char);
+        if (x + w > marginX + maxWidth && char !== ' ') {
+          x = marginX;
+          y += lineHeight;
+        }
+
+        if (char !== ' ') {
+          let span = createSpan(char);
+          span.addClass('letter');
+          span.position(x, y);
+          letters.push(new LetterParticle(x, y, span));
+        }
+
+        x += w;
+      }
+    }
+
+    function draw() {
+      clear();
+      for (let l of letters) {
+        l.applyMouseRepel(mouseX, mouseY);
+        l.update();
+        l.display();
+      }
+    }
+
+    class LetterParticle {
+      constructor(x, y, domEl) {
+        this.pos = createVector(x, y);
+        this.vel = createVector(0, 0);
+        this.acc = createVector(0, 0);
+        this.mass = 1;
+        this.dom = domEl;
+      }
+
+      applyForce(force) {
+        this.acc.add(force.copy().div(this.mass));
+      }
+
+      applyMouseRepel(mx, my) {
+        let mouse = createVector(mx, my);
+        let dir = p5.Vector.sub(this.pos, mouse);
+        let d = dir.mag();
+        let radius = 100;
+
+        if (d < radius && d > 1) {
+          dir.normalize();
+          let strength = 1000 / (d * d);
+          dir.mult(strength);
+          this.applyForce(dir);
+        }
+      }
+
+      update() {
+        this.vel.add(this.acc);
+        this.vel.mult(0.92);
+        this.pos.add(this.vel);
+        this.acc.set(0, 0);
+
+        if (this.pos.x < 0 || this.pos.x > windowWidth) this.vel.x *= -1;
+        if (this.pos.y < 0 || this.pos.y > windowHeight) this.vel.y *= -1;
+
+        this.pos.x = constrain(this.pos.x, 0, windowWidth);
+        this.pos.y = constrain(this.pos.y, 0, windowHeight);
+      }
+
+      display() {
+        this.dom.position(this.pos.x, this.pos.y);
+      }
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+  </script>
+</body>
+</html>

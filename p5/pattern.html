@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Animated Texture Grid</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      canvas {
+        display: block;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const boxSize = 100;
+      const margin = 20;
+      const cols = 5;
+      const rows = 5;
+      let patterns = [];
+
+      function setup() {
+        createCanvas(
+          cols * (boxSize + margin) + margin,
+          rows * (boxSize + margin) + margin
+        ).parent(document.body);
+
+        for (let i = 0; i < rows * cols; i++) {
+          const x = margin + (i % cols) * (boxSize + margin);
+          const y = margin + floor(i / cols) * (boxSize + margin);
+          patterns.push(new Pattern(x, y, boxSize, i));
+        }
+
+        frameRate(30);
+      }
+
+      function draw() {
+        background(255);
+        for (let pattern of patterns) {
+          pattern.display();
+        }
+      }
+
+      class Pattern {
+        constructor(x, y, size, type) {
+          this.x = x;
+          this.y = y;
+          this.s = size;
+          this.type = type;
+        }
+
+        display() {
+          push();
+          translate(this.x, this.y);
+          stroke(0);
+          noFill();
+          rect(0, 0, this.s, this.s);
+
+          switch (this.type) {
+            case 0:
+              for (let y = 0; y < this.s; y += 5) {
+                line(0, y, this.s, y + sin(frameCount * 0.1 + y) * 5);
+              }
+              break;
+            case 1:
+              for (let x = 0; x < this.s; x += 5) {
+                line(x, 0, x + cos(frameCount * 0.1 + x) * 5, this.s);
+              }
+              break;
+            case 2:
+              for (let i = 0; i < 100; i++) {
+                strokeWeight(1);
+                point(
+                  noise(i, frameCount * 0.01) * this.s,
+                  random(this.s)
+                );
+              }
+              break;
+            case 3:
+              for (let x = 0; x < this.s; x += 10) {
+                for (let y = 0; y < this.s; y += 10) {
+                  ellipse(
+                    x,
+                    y,
+                    4 + sin((x + y + frameCount) * 0.1) * 2
+                  );
+                }
+              }
+              break;
+            case 4:
+              for (let i = 0; i < 10; i++) {
+                let r = frameCount % this.s;
+                ellipse(this.s / 2, this.s / 2, r * i * 0.05);
+              }
+              break;
+            case 5:
+              for (let i = 0; i < this.s; i += 10) {
+                line(i, 0, this.s - i, this.s);
+              }
+              break;
+            case 6:
+              for (let i = 0; i < this.s; i += 5) {
+                line(0, i, this.s, this.s - i + sin(frameCount * 0.1) * 5);
+              }
+              break;
+            case 7:
+              for (let x = 0; x < this.s; x += 5) {
+                for (let y = 0; y < this.s; y += 5) {
+                  point(x, y + noise(x * 0.05, frameCount * 0.05) * 10);
+                }
+              }
+              break;
+            case 8:
+              for (let y = 0; y < this.s; y++) {
+                let x = noise(y * 0.05, frameCount * 0.02) * this.s;
+                point(x, y);
+              }
+              break;
+            case 9:
+              for (let x = 0; x < this.s; x++) {
+                let y = sin((x + frameCount) * 0.1) * 10 + this.s / 2;
+                point(x, y);
+              }
+              break;
+            case 10:
+              for (let y = 0; y < this.s; y += 5) {
+                let offset = sin(frameCount * 0.1 + y * 0.1) * 10;
+                line(0, y, this.s, y + offset);
+              }
+              break;
+            case 11:
+              for (let x = 0; x < this.s; x += 10) {
+                for (let y = 0; y < this.s; y += 10) {
+                  let angle = frameCount * 0.05;
+                  line(
+                    x,
+                    y,
+                    x + cos(angle) * 5,
+                    y + sin(angle) * 5
+                  );
+                }
+              }
+              break;
+            case 12:
+              for (let i = 0; i < 50; i++) {
+                strokeWeight(1);
+                point(
+                  random(this.s),
+                  noise(i * 0.1, frameCount * 0.01) * this.s
+                );
+              }
+              break;
+            case 13:
+              for (let x = 0; x < this.s; x += 5) {
+                line(
+                  x,
+                  0,
+                  x,
+                  this.s * noise(x * 0.05, frameCount * 0.02)
+                );
+              }
+              break;
+            case 14:
+              for (let x = 0; x < this.s; x += 10) {
+                for (let y = 0; y < this.s; y += 10) {
+                  ellipse(x, y, sin(frameCount * 0.1 + x + y) * 2 + 4);
+                }
+              }
+              break;
+            case 15:
+              for (let i = 0; i < this.s; i += 5) {
+                line(i, 0, this.s - i, this.s);
+              }
+              break;
+            case 16:
+              for (let i = 0; i < this.s; i += 10) {
+                strokeWeight(map(sin(frameCount * 0.05 + i), -1, 1, 1, 4));
+                line(0, i, this.s, i);
+              }
+              strokeWeight(1);
+              break;
+            case 17:
+              for (let i = 0; i < 50; i++) {
+                point(random(this.s), random(this.s));
+              }
+              break;
+            case 18:
+              for (let i = 0; i < 50; i++) {
+                strokeWeight(random(1, 2));
+                point(random(this.s), random(this.s));
+              }
+              strokeWeight(1);
+              break;
+            case 19:
+              for (let i = 0; i < this.s; i += 5) {
+                line(
+                  0,
+                  i,
+                  this.s,
+                  this.s - i + sin(frameCount * 0.1) * 5
+                );
+              }
+              break;
+            case 20:
+              for (let x = 0; x < this.s; x += 10) {
+                for (let y = 0; y < this.s; y += 10) {
+                  ellipse(x, y, (x + y + frameCount) % 6);
+                }
+              }
+              break;
+            case 21:
+              for (let x = 0; x < this.s; x += 8) {
+                line(x, 0, this.s - x, this.s);
+              }
+              break;
+            case 22:
+              for (let i = 0; i < this.s; i += 10) {
+                ellipse(i, i, (frameCount % 10) + 2);
+              }
+              break;
+            case 23:
+              for (let i = 0; i < this.s; i += 10) {
+                line(i, 0, i, this.s);
+                line(0, i, this.s, i);
+              }
+              break;
+            case 24:
+              beginShape();
+              for (let x = 0; x < this.s; x++) {
+                let y = noise(x * 0.05, frameCount * 0.01) * this.s;
+                vertex(x, y);
+              }
+              endShape();
+              break;
+          }
+
+          pop();
+        }
+      }
+    </script>
+  </body>
+</html>
