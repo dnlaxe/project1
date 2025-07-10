@@ -15,8 +15,8 @@
 
     #cursor-dot {
       position: fixed;
-      width: 10px;
-      height: 10px;
+      width: 2px;
+      height: 2px;
       background: orange;
       border-radius: 50%;
       pointer-events: none;
@@ -69,7 +69,7 @@
     mouse.x = x;
     mouse.y = y;
     if (dragging) {
-      dot.style.transform = `translate(${x - 5}px, ${y - 5}px)`;
+      dot.style.transform = `translate(${x - 1}px, ${y - 1}px)`;
     }
   }
 
@@ -126,11 +126,11 @@
     ctx.clearRect(0, 0, width, height);
 
     if (trail.length > 2) {
-      ctx.lineWidth = 10;
+      ctx.lineWidth = 2;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.strokeStyle = "orange";
-      ctx.shadowBlur = 2;
+      ctx.shadowBlur = 1;
       ctx.shadowColor = "orange";
 
       drawSmoothLine(trail);
