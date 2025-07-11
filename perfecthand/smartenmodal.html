@@ -164,275 +164,243 @@
 
   <canvas id="canvas"></canvas>
 
-  <script type="module">
-    import { getStroke } from '../lib/perfect-freehand.js';
+<script type="module">
+  import { getStroke } from '../lib/perfect-freehand.js';
 
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-    let isDrawing = false;
-    let currentPoints = [];
-    const strokes = [];
+  let isDrawing = false;
+  let currentPoints = [];
+  const strokes = [];
 
-    let backgroundImage = null;
-    let backgroundImageHeight = 0;
+  let backgroundImage = null;
+  let backgroundImageHeight = 0;
+  let scrollOffsetY = 0; // ✅ for vertical canvas scrolling
 
-    const controls = {
-      colorInside: document.getElementById('colorInside'),
-      colorBorder: document.getElementById('colorBorder'),
-      opacity: document.getElementById('opacity'),
-      shadowBlur: document.getElementById('shadowBlur'),
-      smoothing: document.getElementById('smoothing'),
-      streamline: document.getElementById('streamline'),
-      drawStreamline: document.getElementById('drawStreamline'),
-      thinning: document.getElementById('thinning'),
-      size: document.getElementById('size'),
-      simulatePressure: document.getElementById('simulatePressure'),
-      easing: document.getElementById('easing')
+  const controls = {
+    colorInside: document.getElementById('colorInside'),
+    colorBorder: document.getElementById('colorBorder'),
+    opacity: document.getElementById('opacity'),
+    shadowBlur: document.getElementById('shadowBlur'),
+    smoothing: document.getElementById('smoothing'),
+    streamline: document.getElementById('streamline'),
+    drawStreamline: document.getElementById('drawStreamline'),
+    thinning: document.getElementById('thinning'),
+    size: document.getElementById('size'),
+    simulatePressure: document.getElementById('simulatePressure'),
+    easing: document.getElementById('easing')
+  };
+
+  const labels = {
+    opacity: document.getElementById('opacityVal'),
+    shadowBlur: document.getElementById('shadowBlurVal'),
+    smoothing: document.getElementById('smoothingVal'),
+    streamline: document.getElementById('streamlineVal'),
+    drawStreamline: document.getElementById('drawStreamlineVal'),
+    thinning: document.getElementById('thinningVal'),
+    size: document.getElementById('sizeVal')
+  };
+
+  const easingFunctions = {
+    linear: t => t,
+    easeIn: t => t * t,
+    easeOut: t => 1 - Math.cos((t * Math.PI) / 2)
+  };
+
+  function getOptions(isFinal) {
+    return {
+      size: parseFloat(controls.size.value),
+      thinning: parseFloat(controls.thinning.value),
+      smoothing: parseFloat(controls.smoothing.value),
+      streamline: isFinal
+        ? parseFloat(controls.streamline.value)
+        : parseFloat(controls.drawStreamline.value),
+      simulatePressure: controls.simulatePressure.checked,
+      easing: easingFunctions[controls.easing.value],
+      last: true
     };
+  }
 
-    const labels = {
-      opacity: document.getElementById('opacityVal'),
-      shadowBlur: document.getElementById('shadowBlurVal'),
-      smoothing: document.getElementById('smoothingVal'),
-      streamline: document.getElementById('streamlineVal'),
-      drawStreamline: document.getElementById('drawStreamlineVal'),
-      thinning: document.getElementById('thinningVal'),
-      size: document.getElementById('sizeVal')
-    };
+  function hexToRgba(hex, alpha) {
+    const bigint = parseInt(hex.slice(1), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
 
-    const easingFunctions = {
-      linear: t => t,
-      easeIn: t => t * t,
-      easeOut: t => 1 - Math.cos((t * Math.PI) / 2)
-    };
+  function getStrokePath(points, isFinal = false) {
+    return getStroke(points, getOptions(isFinal));
+  }
 
-    function getOptions(isFinal) {
-      return {
-        size: parseFloat(controls.size.value),
-        thinning: parseFloat(controls.thinning.value),
-        smoothing: parseFloat(controls.smoothing.value),
-        streamline: isFinal
-          ? parseFloat(controls.streamline.value)
-          : parseFloat(controls.drawStreamline.value),
-        simulatePressure: controls.simulatePressure.checked,
-        easing: easingFunctions[controls.easing.value],
-        last: true
-      };
+  function drawStroke(points, isFinal = false) {
+    const stroke = getStrokePath(points, isFinal);
+    const innerColor = controls.colorInside.value;
+    const outerColor = controls.colorBorder.value;
+    const alpha = parseFloat(controls.opacity.value);
+    const blur = parseInt(controls.shadowBlur.value, 10);
+    const strokeSize = getOptions(isFinal).size;
+
+    const rgbaInner = hexToRgba(innerColor, alpha);
+    const rgbaOuter = hexToRgba(outerColor, alpha);
+
+    // Outer stroke
+    ctx.beginPath();
+    for (let i = 0; i < stroke.length; i++) {
+      const [x, y] = stroke[i];
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
+    ctx.strokeStyle = rgbaOuter;
+    ctx.lineWidth = strokeSize + 4;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.stroke();
 
-    function hexToRgba(hex, alpha) {
-      const bigint = parseInt(hex.slice(1), 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    // Inner stroke
+    ctx.beginPath();
+    for (let i = 0; i < stroke.length; i++) {
+      const [x, y] = stroke[i];
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
+    ctx.strokeStyle = rgbaInner;
+    ctx.lineWidth = strokeSize;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
 
-    function getStrokePath(points, isFinal = false) {
-      return getStroke(points, getOptions(isFinal));
-    }
-
-    function drawStroke(points, isFinal = false) {
-      const stroke = getStrokePath(points, isFinal);
-      const innerColor = controls.colorInside.value;
-      const outerColor = controls.colorBorder.value;
-      const alpha = parseFloat(controls.opacity.value);
-      const blur = parseInt(controls.shadowBlur.value, 10);
-      const strokeSize = getOptions(isFinal).size;
-
-      const rgbaInner = hexToRgba(innerColor, alpha);
-      const rgbaOuter = hexToRgba(outerColor, alpha);
-
-      console.log('--- Drawing Stroke ---');
-      console.log('Stroke size:', strokeSize);
-      console.log('RGBA Inner:', rgbaInner);
-      console.log('RGBA Outer:', rgbaOuter);
-      console.log('Shadow blur:', blur);
-
-      // Outer stroke (border)
-      ctx.beginPath();
-      for (let i = 0; i < stroke.length; i++) {
-        const [x, y] = stroke[i];
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = rgbaOuter;
-      ctx.lineWidth = strokeSize + 4;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
+    if (blur > 0) {
+      ctx.shadowColor = rgbaInner;
+      ctx.shadowBlur = blur;
+    } else {
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
-      ctx.stroke();
-
-      // Inner stroke (fill) + optional shadow
-      ctx.beginPath();
-      for (let i = 0; i < stroke.length; i++) {
-        const [x, y] = stroke[i];
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = rgbaInner;
-      ctx.lineWidth = strokeSize;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-
-      if (blur > 0) {
-        ctx.shadowColor = rgbaInner;
-        ctx.shadowBlur = blur;
-        console.log('→ Applying shadow:', ctx.shadowColor, ctx.shadowBlur);
-      } else {
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-        console.log('→ Shadow disabled');
-      }
-
-      ctx.stroke();
     }
 
-    function drawAllStrokes() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (backgroundImage) {
-        ctx.drawImage(backgroundImage, 0, 0, canvas.width, backgroundImageHeight);
-      }
-      for (const points of strokes) drawStroke(points, true);
-      if (currentPoints.length > 0) drawStroke(currentPoints, false);
-    }
-
-    canvas.addEventListener('pointerdown', (e) => {
-      isDrawing = true;
-      currentPoints = [[e.offsetX, e.offsetY]];
-    });
-
-    canvas.addEventListener('pointermove', (e) => {
-      if (!isDrawing) return;
-      currentPoints.push([e.offsetX, e.offsetY]);
-      drawAllStrokes();
-    });
-
-    canvas.addEventListener('pointerup', () => {
-      isDrawing = false;
-      if (currentPoints.length > 0) {
-        strokes.push(currentPoints);
-        currentPoints = [];
-        drawAllStrokes();
-      }
-    });
-
-    document.getElementById('undoBtn').addEventListener('click', () => {
-      strokes.pop();
-      drawAllStrokes();
-    });
-
-    document.getElementById('imageUpload').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const img = new Image();
-      img.onload = () => {
-        const scale = canvas.width / img.width;
-        backgroundImage = img;
-        backgroundImageHeight = img.height * scale;
-        drawAllStrokes();
-      };
-      img.src = URL.createObjectURL(file);
-    });
-
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      drawAllStrokes();
-    });
-
-    for (const key in labels) {
-      controls[key].addEventListener('input', () => {
-        labels[key].textContent = controls[key].value;
-        drawAllStrokes();
-      });
-    }
-
-    const toggleBtn = document.getElementById('toggleToolbarBtn');
-    const toolbar = document.getElementById('toolbar');
-
-    toggleBtn.addEventListener('click', () => {
-      toolbar.classList.toggle('active');
-    });
-
-canvas.addEventListener('click', () => {
-  if (toolbar.classList.contains('active')) {
-    toolbar.classList.remove('active');
+    ctx.stroke();
   }
-});
 
-// === SCROLL BUTTONS LOGIC ===
-const scrollStep = 10;
-let scrollInterval = null;
+  function drawAllStrokes() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(0, scrollOffsetY);
 
-function scrollCanvas(dy) {
-  window.scrollBy(0, dy); // or modify canvas offset here if needed
-}
+    if (backgroundImage) {
+      ctx.drawImage(backgroundImage, 0, 0, canvas.width, backgroundImageHeight);
+    }
 
-function startScrolling(dy) {
-  if (scrollInterval) return;
-  scrollInterval = setInterval(() => scrollCanvas(dy), 16); // ~60fps
-}
+    for (const points of strokes) drawStroke(points, true);
+    if (currentPoints.length > 0) drawStroke(currentPoints, false);
 
-function stopScrolling() {
-  clearInterval(scrollInterval);
-  scrollInterval = null;
-}
+    ctx.restore();
+  }
 
-const scrollUpBtn = document.getElementById('scrollUpBtn');
-const scrollDownBtn = document.getElementById('scrollDownBtn');
-
-// Handle both mouse and touch events
-['mousedown', 'touchstart'].forEach(eventType => {
-  scrollUpBtn.addEventListener(eventType, e => {
+  canvas.addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    startScrolling(-scrollStep);
+    isDrawing = true;
+    currentPoints = [[e.offsetX, e.offsetY - scrollOffsetY]];
   });
-  scrollDownBtn.addEventListener(eventType, e => {
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!isDrawing) return;
     e.preventDefault();
-    startScrolling(scrollStep);
+    currentPoints.push([e.offsetX, e.offsetY - scrollOffsetY]);
+    drawAllStrokes();
   });
-});
 
-// Stop scrolling when released or touch ends
-['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(eventType => {
-  document.addEventListener(eventType, stopScrolling);
-});
+  canvas.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    isDrawing = false;
+    if (currentPoints.length > 0) {
+      strokes.push(currentPoints);
+      currentPoints = [];
+      drawAllStrokes();
+    }
+  });
 
+  document.getElementById('undoBtn').addEventListener('click', () => {
+    strokes.pop();
+    drawAllStrokes();
+  });
 
-    window.addEventListener('wheel', e => e.preventDefault(), { passive: false });
-    window.addEventListener('keydown', e => {
-      if (['ArrowUp', 'ArrowDown', ' '].includes(e.key)) {
-        e.preventDefault();
-      }
+  document.getElementById('imageUpload').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const scale = canvas.width / img.width;
+      backgroundImage = img;
+      backgroundImageHeight = img.height * scale;
+      drawAllStrokes();
+    };
+    img.src = URL.createObjectURL(file);
+  });
+
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    drawAllStrokes();
+  });
+
+  for (const key in labels) {
+    controls[key].addEventListener('input', () => {
+      labels[key].textContent = controls[key].value;
+      drawAllStrokes();
     });
+  }
 
-    let scrollInterval = null;
+  const toggleBtn = document.getElementById('toggleToolbarBtn');
+  const toolbar = document.getElementById('toolbar');
 
-    function scrollPage(amount) {
-      window.scrollBy({ top: amount, left: 0, behavior: 'instant' }); // You can replace with custom canvas logic if needed
+  toggleBtn.addEventListener('click', () => {
+    toolbar.classList.toggle('active');
+  });
+
+  canvas.addEventListener('click', () => {
+    if (toolbar.classList.contains('active')) {
+      toolbar.classList.remove('active');
     }
+  });
 
-    function startScrolling(amount) {
-      if (scrollInterval) return;
-      scrollInterval = setInterval(() => scrollPage(amount), 16); // ~60fps
-    }
+  // === SCROLL BUTTONS ===
+  const scrollStep = 10;
+  let scrollInterval = null;
 
-    function stopScrolling() {
-      clearInterval(scrollInterval);
-      scrollInterval = null;
-    }
+  function startScrolling(dy) {
+    if (scrollInterval) return;
+    scrollInterval = setInterval(() => {
+      scrollOffsetY += dy;
+      drawAllStrokes();
+    }, 16); // ~60fps
+  }
 
-    document.getElementById('scrollUpBtn').addEventListener('mousedown', () => startScrolling(-10));
-    document.getElementById('scrollDownBtn').addEventListener('mousedown', () => startScrolling(10));
+  function stopScrolling() {
+    clearInterval(scrollInterval);
+    scrollInterval = null;
+  }
 
-    document.addEventListener('mouseup', stopScrolling);
-    document.addEventListener('touchend', stopScrolling);
+  const scrollUpBtn = document.getElementById('scrollUpBtn');
+  const scrollDownBtn = document.getElementById('scrollDownBtn');
 
+  ['mousedown', 'touchstart'].forEach(evt => {
+    scrollUpBtn.addEventListener(evt, e => {
+      e.preventDefault();
+      startScrolling(-scrollStep);
+    });
+    scrollDownBtn.addEventListener(evt, e => {
+      e.preventDefault();
+      startScrolling(scrollStep);
+    });
+  });
 
+  ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => {
+    document.addEventListener(evt, stopScrolling);
+  });
 
-  </script>
+</script>
+
 </body>
 </html>
