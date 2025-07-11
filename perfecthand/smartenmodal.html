@@ -59,7 +59,7 @@
     background: rgba(255, 255, 255, 0.98);
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
     padding: 20px;
-    z-index: 10;
+    z-index: 200;
     overflow-y: auto;
     transition: left 0.3s ease-in-out;
     font-size: 14px;
@@ -76,7 +76,7 @@
     position: fixed;
     top: 10px;
     right: 10px;
-    z-index: 11;
+    z-index: 200;
     background: #333;
   }
 
@@ -90,6 +90,38 @@
     flex-direction: row;
     gap: 6px;
   }
+
+  #toggleWhiteboardBtn {
+  position: fixed;
+  top: 10px;
+  left: 250px; /* adjust to avoid overlapping #buttonGroup */
+  z-index: 200;
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#whiteboardModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100%;
+  background: white;
+  z-index: 100;
+  transform: translateX(-100%); /* start off-screen */
+  transition: transform 0.3s ease-in-out;
+  display: block; /* keep it in the layout, hidden via transform */
+}
+#whiteboardModal.active {
+  transform: translateX(0); /* slide in */
+}
+
+
 
 </style>
 
@@ -150,10 +182,26 @@
   <button id="undoBtn">undo</button>
 </div>
 
+<!-- Move this outside so it stays global -->
+<button id="toggleWhiteboardBtn">Whiteboard</button>
+
 
 
 
   <canvas id="canvas"></canvas>
+
+    <!-- === Whiteboard Modal === -->
+  <div id="whiteboardModal">
+    <canvas id="whiteboardCanvas"></canvas>
+
+    <!-- Whiteboard-specific controls -->
+    <div id="whiteboardControls" style="position: fixed; top: 10px; left: 10px; display: flex; gap: 6px; z-index: 101;">
+      <button id="wbScrollUpBtn">up</button>
+      <button id="wbScrollDownBtn">down</button>
+      <button id="wbUndoBtn">undo</button>
+    </div>
+  </div>
+
 
 <script type="module">
   import { getStroke } from '../lib/perfect-freehand.js';
@@ -329,12 +377,17 @@
     };
     img.src = URL.createObjectURL(file);
   });
-
+  
   window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     drawAllStrokes();
+
+    whiteboardCanvas.width = window.innerWidth;
+    whiteboardCanvas.height = window.innerHeight;
+    drawWhiteboardStrokes();
   });
+
 
   for (const key in labels) {
     controls[key].addEventListener('input', () => {
@@ -390,6 +443,158 @@
   ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => {
     document.addEventListener(evt, stopScrolling);
   });
+
+    // === Whiteboard Elements ===
+  const whiteboardModal = document.getElementById('whiteboardModal');
+  const whiteboardCanvas = document.getElementById('whiteboardCanvas');
+  const wbCtx = whiteboardCanvas.getContext('2d');
+
+  let wbIsDrawing = false;
+  let wbCurrentPoints = [];
+  const wbStrokes = [];
+
+  let wbScrollOffsetY = 0;
+
+  function drawWhiteboardStrokes() {
+  wbCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
+  wbCtx.save();
+  wbCtx.translate(0, wbScrollOffsetY);
+
+  for (const points of wbStrokes) drawStrokeToCtx(wbCtx, points, true);
+  if (wbCurrentPoints.length > 0) drawStrokeToCtx(wbCtx, wbCurrentPoints, false);
+
+  wbCtx.restore();
+}
+
+function drawStrokeToCtx(context, points, isFinal = false) {
+  const stroke = getStrokePath(points, isFinal);
+  const innerColor = controls.colorInside.value;
+  const outerColor = controls.colorBorder.value;
+  const alpha = parseFloat(controls.opacity.value);
+  const blur = parseInt(controls.shadowBlur.value, 10);
+  const strokeSize = getOptions(isFinal).size;
+
+  const rgbaInner = hexToRgba(innerColor, alpha);
+  const rgbaOuter = hexToRgba(outerColor, alpha);
+
+  // Outer
+  context.beginPath();
+  for (let i = 0; i < stroke.length; i++) {
+    const [x, y] = stroke[i];
+    i === 0 ? context.moveTo(x, y) : context.lineTo(x, y);
+  }
+  context.strokeStyle = rgbaOuter;
+  context.lineWidth = strokeSize + 4;
+  context.lineJoin = 'round';
+  context.lineCap = 'round';
+  context.shadowColor = 'transparent';
+  context.shadowBlur = 0;
+  context.stroke();
+
+  // Inner
+  context.beginPath();
+  for (let i = 0; i < stroke.length; i++) {
+    const [x, y] = stroke[i];
+    i === 0 ? context.moveTo(x, y) : context.lineTo(x, y);
+  }
+  context.strokeStyle = rgbaInner;
+  context.lineWidth = strokeSize;
+  context.lineJoin = 'round';
+  context.lineCap = 'round';
+
+  if (blur > 0) {
+    context.shadowColor = rgbaInner;
+    context.shadowBlur = blur;
+  } else {
+    context.shadowColor = 'transparent';
+    context.shadowBlur = 0;
+  }
+
+  context.stroke();
+}
+
+whiteboardCanvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  wbIsDrawing = true;
+  wbCurrentPoints = [[e.offsetX, e.offsetY - wbScrollOffsetY]];
+});
+
+whiteboardCanvas.addEventListener('pointermove', (e) => {
+  if (!wbIsDrawing) return;
+  e.preventDefault();
+  wbCurrentPoints.push([e.offsetX, e.offsetY - wbScrollOffsetY]);
+  drawWhiteboardStrokes();
+});
+
+whiteboardCanvas.addEventListener('pointerup', (e) => {
+  e.preventDefault();
+  wbIsDrawing = false;
+  if (wbCurrentPoints.length > 0) {
+    wbStrokes.push(wbCurrentPoints);
+    wbCurrentPoints = [];
+    drawWhiteboardStrokes();
+  }
+});
+
+document.getElementById('wbUndoBtn').addEventListener('click', () => {
+  wbStrokes.pop();
+  drawWhiteboardStrokes();
+});
+
+const wbScrollStep = 10;
+let wbScrollInterval = null;
+
+function startWBScrolling(dy) {
+  if (wbScrollInterval) return;
+  wbScrollInterval = setInterval(() => {
+    wbScrollOffsetY += dy;
+    drawWhiteboardStrokes();
+  }, 16);
+}
+
+function stopWBScrolling() {
+  clearInterval(wbScrollInterval);
+  wbScrollInterval = null;
+}
+
+const wbScrollUpBtn = document.getElementById('wbScrollUpBtn');
+const wbScrollDownBtn = document.getElementById('wbScrollDownBtn');
+
+['mousedown', 'touchstart'].forEach(evt => {
+  wbScrollUpBtn.addEventListener(evt, e => {
+    e.preventDefault();
+    startWBScrolling(wbScrollStep); // ↓
+  });
+  wbScrollDownBtn.addEventListener(evt, e => {
+    e.preventDefault();
+    startWBScrolling(-wbScrollStep); // ↑
+  });
+});
+
+['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => {
+  document.addEventListener(evt, stopWBScrolling);
+});
+
+const toggleWhiteboardBtn = document.getElementById('toggleWhiteboardBtn');
+
+toggleWhiteboardBtn.addEventListener('click', () => {
+  const isOpen = whiteboardModal.style.display === 'block';
+
+if (whiteboardModal.classList.contains('active')) {
+  whiteboardModal.classList.remove('active');
+  toggleWhiteboardBtn.textContent = 'Whiteboard';
+} else {
+  whiteboardCanvas.width = window.innerWidth;
+  whiteboardCanvas.height = window.innerHeight;
+  drawWhiteboardStrokes();
+  whiteboardModal.classList.add('active');
+  toggleWhiteboardBtn.textContent = 'Close';
+}
+});
+
+
+
+
 
 </script>
 
