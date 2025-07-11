@@ -4,6 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
   <title>Smart Annotator with Image Background</title>
   <style>
     html, body {
@@ -16,6 +19,7 @@
       user-select: none;
       -webkit-user-select: none;
       overscroll-behavior: none;
+      font-family: "Lexend", sans-serif;
     }
 
     canvas {
@@ -39,11 +43,12 @@
     button, select {
       font-size: 14px;
       border: none;
-      border-radius: 6px;
+      border-radius: 40px;
       padding: 6px 12px;
       background: #444;
       color: white;
       cursor: pointer;
+      font-family: "Lexend", sans-serif;
     }
 
     button:active {
@@ -92,10 +97,10 @@
     }
 
     #toggleWhiteboardBtn {
-      background: #333;
+      background: #444;
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 40px;
       padding: 6px 12px;
       font-size: 14px;
       cursor: pointer;
@@ -185,13 +190,13 @@
   </div>
 
   <!-- ☰ Toolbar Toggle -->
-  <button id="toggleToolbarBtn">☰ Tools</button>
+  <button id="toggleToolbarBtn">pen</button>
 
   <!-- Top-Left Global Buttons -->
   <div id="globalControls">
     <button id="scrollUpBtn">up</button>
     <button id="scrollDownBtn">down</button>
-    <button id="toggleWhiteboardBtn">Whiteboard</button>
+    <button id="toggleWhiteboardBtn">whiteboard</button>
   </div>
 
   <!-- Canvas Undo Button (behind whiteboard modal) -->
@@ -209,9 +214,9 @@
     <!-- Whiteboard-specific Undo Button -->
   <div id="whiteboardControls">
     <button id="wbUndoBtn">undo</button>
-    <button id="wbToggleModeBtn">🖊 Annotate</button>
-    <button id="wbPasteImageBtn">📋 Paste Image</button>
-    <button id="wbUploadImageBtn">🖼️ Upload Image</button>
+    <button id="wbToggleModeBtn">mode: annotate</button>
+    <button id="wbPasteImageBtn">paste image</button>
+    <button id="wbUploadImageBtn">upload image</button>
     <input type="file" id="wbImageInput" accept="image/*" style="display: none;" />
   </div>
 
@@ -467,7 +472,7 @@ function startScrolling(dy) {
 
   wbToggleModeBtn.addEventListener('click', () => {
     whiteboardMode = whiteboardMode === 'annotate' ? 'edit' : 'annotate';
-    wbToggleModeBtn.textContent = whiteboardMode === 'annotate' ? '🖊 Annotate' : '🖼 Edit Images';
+    wbToggleModeBtn.textContent = whiteboardMode === 'annotate' ? 'mode:annotate' : 'mode: edit images';
     drawWhiteboardStrokes(); // refresh view
   });
 
@@ -759,13 +764,13 @@ toggleWhiteboardBtn.addEventListener('click', () => {
 
 if (whiteboardModal.classList.contains('active')) {
   whiteboardModal.classList.remove('active');
-  toggleWhiteboardBtn.textContent = 'Whiteboard';
+  toggleWhiteboardBtn.textContent = 'whiteboard';
 } else {
   whiteboardCanvas.width = window.innerWidth;
   whiteboardCanvas.height = window.innerHeight;
   drawWhiteboardStrokes();
   whiteboardModal.classList.add('active');
-  toggleWhiteboardBtn.textContent = 'Close';
+  toggleWhiteboardBtn.textContent = 'close';
 }
 });
 
