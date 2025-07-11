@@ -388,11 +388,11 @@
   ['mousedown', 'touchstart'].forEach(evt => {
     scrollUpBtn.addEventListener(evt, e => {
       e.preventDefault();
-      startScrolling(-scrollStep);
+      startScrolling(scrollStep); // ↓ visually
     });
     scrollDownBtn.addEventListener(evt, e => {
       e.preventDefault();
-      startScrolling(scrollStep);
+      startScrolling(-scrollStep); // ↑ visually
     });
   });
 
