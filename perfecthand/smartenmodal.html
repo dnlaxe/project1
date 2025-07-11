@@ -207,9 +207,14 @@
     <canvas id="whiteboardCanvas"></canvas>
 
     <!-- Whiteboard-specific Undo Button -->
-    <div id="whiteboardControls">
-      <button id="wbUndoBtn">undo</button>
-    </div>
+  <div id="whiteboardControls">
+    <button id="wbUndoBtn">undo</button>
+    <button id="wbToggleModeBtn">🖊 Annotate</button>
+    <button id="wbPasteImageBtn">📋 Paste Image</button>
+    <button id="wbUploadImageBtn">🖼️ Upload Image</button>
+    <input type="file" id="wbImageInput" accept="image/*" style="display: none;" />
+  </div>
+
   </div>
   <script type="module">
   import { getStroke } from '../lib/perfect-freehand.js';
@@ -456,6 +461,22 @@ function startScrolling(dy) {
   });
 
     // === Whiteboard Elements ===
+  let whiteboardMode = 'annotate'; // or 'edit'
+
+  const wbToggleModeBtn = document.getElementById('wbToggleModeBtn');
+
+  wbToggleModeBtn.addEventListener('click', () => {
+    whiteboardMode = whiteboardMode === 'annotate' ? 'edit' : 'annotate';
+    wbToggleModeBtn.textContent = whiteboardMode === 'annotate' ? '🖊 Annotate' : '🖼 Edit Images';
+    drawWhiteboardStrokes(); // refresh view
+  });
+
+  function switchToEditMode() {
+  whiteboardMode = 'edit';
+  wbToggleModeBtn.textContent = '🖼 Edit Images';
+  drawWhiteboardStrokes();
+}
+
   const whiteboardModal = document.getElementById('whiteboardModal');
   const whiteboardCanvas = document.getElementById('whiteboardCanvas');
   const wbCtx = whiteboardCanvas.getContext('2d');
@@ -463,19 +484,15 @@ function startScrolling(dy) {
   let wbIsDrawing = false;
   let wbCurrentPoints = [];
   const wbStrokes = [];
+  let draggingImage = null;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+  let resizingImage = null;
+  let activeHandle = null;
+  const handleSize = 10;
+
 
   let wbScrollOffsetY = 0;
-
-  function drawWhiteboardStrokes() {
-  wbCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
-  wbCtx.save();
-  wbCtx.translate(0, wbScrollOffsetY);
-
-  for (const points of wbStrokes) drawStrokeToCtx(wbCtx, points, true);
-  if (wbCurrentPoints.length > 0) drawStrokeToCtx(wbCtx, wbCurrentPoints, false);
-
-  wbCtx.restore();
-}
 
 function drawStrokeToCtx(context, points, isFinal = false) {
   const stroke = getStrokePath(points, isFinal);
@@ -526,31 +543,214 @@ function drawStrokeToCtx(context, points, isFinal = false) {
 
 whiteboardCanvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  wbIsDrawing = true;
-  wbCurrentPoints = [[e.offsetX, e.offsetY - wbScrollOffsetY]];
+  const x = e.offsetX;
+  const y = e.offsetY - wbScrollOffsetY;
+
+  if (whiteboardMode === 'edit') {
+    // check for handles or drag
+    for (let i = wbImages.length - 1; i >= 0; i--) {
+      const img = wbImages[i];
+      const handles = {
+        'tl': [img.x, img.y],
+        'tr': [img.x + img.width, img.y],
+        'bl': [img.x, img.y + img.height],
+        'br': [img.x + img.width, img.y + img.height]
+      };
+      const half = handleSize / 2;
+      for (const [handle, [hx, hy]] of Object.entries(handles)) {
+        if (
+          x >= hx - half && x <= hx + half &&
+          y >= hy - half && y <= hy + half
+        ) {
+          resizingImage = img;
+          activeHandle = handle;
+          return;
+        }
+      }
+      if (
+        x >= img.x && x <= img.x + img.width &&
+        y >= img.y && y <= img.y + img.height
+      ) {
+        draggingImage = img;
+        dragOffsetX = x - img.x;
+        dragOffsetY = y - img.y;
+        return;
+      }
+    }
+  }
+
+  if (whiteboardMode === 'annotate') {
+    wbIsDrawing = true;
+    wbCurrentPoints = [[x, y]];
+  }
 });
 
 whiteboardCanvas.addEventListener('pointermove', (e) => {
+  const x = e.offsetX;
+  const y = e.offsetY - wbScrollOffsetY;
+
+  if (resizingImage && activeHandle) {
+    let newX = resizingImage.x;
+    let newY = resizingImage.y;
+    let newWidth = resizingImage.width;
+    let newHeight = resizingImage.height;
+
+    if (activeHandle.includes('r')) {
+      newWidth = x - resizingImage.x;
+    }
+    if (activeHandle.includes('l')) {
+      newWidth = resizingImage.x + resizingImage.width - x;
+      newX = x;
+    }
+    if (activeHandle.includes('b')) {
+      newHeight = y - resizingImage.y;
+    }
+    if (activeHandle.includes('t')) {
+      newHeight = resizingImage.y + resizingImage.height - y;
+      newY = y;
+    }
+
+    newWidth = Math.max(20, newWidth);
+    newHeight = Math.max(20, newHeight);
+
+    resizingImage.x = newX;
+    resizingImage.y = newY;
+    resizingImage.width = newWidth;
+    resizingImage.height = newHeight;
+
+    drawWhiteboardStrokes();
+    return;
+  }
+
+  if (draggingImage) {
+    draggingImage.x = x - dragOffsetX;
+    draggingImage.y = y - dragOffsetY;
+    drawWhiteboardStrokes();
+    return;
+  }
+
   if (!wbIsDrawing) return;
+
   e.preventDefault();
-  wbCurrentPoints.push([e.offsetX, e.offsetY - wbScrollOffsetY]);
+  wbCurrentPoints.push([x, y]);
   drawWhiteboardStrokes();
 });
 
+
 whiteboardCanvas.addEventListener('pointerup', (e) => {
   e.preventDefault();
+  if (draggingImage) {
+    draggingImage = null;
+    return;
+  }
+
   wbIsDrawing = false;
   if (wbCurrentPoints.length > 0) {
     wbStrokes.push(wbCurrentPoints);
     wbCurrentPoints = [];
     drawWhiteboardStrokes();
   }
+
+  if (resizingImage) {
+  resizingImage = null;
+  activeHandle = null;
+  return;
+}
+
 });
+
 
 document.getElementById('wbUndoBtn').addEventListener('click', () => {
   wbStrokes.pop();
   drawWhiteboardStrokes();
 });
+
+const wbPasteImageBtn = document.getElementById('wbPasteImageBtn');
+const wbUploadImageBtn = document.getElementById('wbUploadImageBtn');
+const wbImageInput = document.getElementById('wbImageInput');
+
+let wbImages = []; // to hold pasted/uploaded images
+
+function drawWhiteboardStrokes() {
+  wbCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
+  wbCtx.save();
+  wbCtx.translate(0, wbScrollOffsetY);
+
+  // Draw images
+  for (const imgObj of wbImages) {
+    wbCtx.drawImage(imgObj.image, imgObj.x, imgObj.y, imgObj.width, imgObj.height);
+
+    // ✅ Only show resize handles in "edit" mode
+    if (whiteboardMode === 'edit') {
+      wbCtx.fillStyle = '#0099ff';
+      wbCtx.fillRect(imgObj.x - handleSize / 2, imgObj.y - handleSize / 2, handleSize, handleSize); // top-left
+      wbCtx.fillRect(imgObj.x + imgObj.width - handleSize / 2, imgObj.y - handleSize / 2, handleSize, handleSize); // top-right
+      wbCtx.fillRect(imgObj.x - handleSize / 2, imgObj.y + imgObj.height - handleSize / 2, handleSize, handleSize); // bottom-left
+      wbCtx.fillRect(imgObj.x + imgObj.width - handleSize / 2, imgObj.y + imgObj.height - handleSize / 2, handleSize, handleSize); // bottom-right
+    }
+  }
+
+  // Draw strokes
+  for (const points of wbStrokes) drawStrokeToCtx(wbCtx, points, true);
+  if (wbCurrentPoints.length > 0) drawStrokeToCtx(wbCtx, wbCurrentPoints, false);
+
+  wbCtx.restore();
+}
+
+
+// Handle upload via file picker
+wbUploadImageBtn.addEventListener('click', () => {
+  wbImageInput.click();
+});
+
+wbImageInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    wbImages.push({
+      image: img,
+      x: 100,
+      y: 100,
+      width: img.width * 0.4,
+      height: img.height * 0.4
+    });
+    switchToEditMode();
+    drawWhiteboardStrokes();
+  };
+  img.src = URL.createObjectURL(file);
+});
+
+// Handle clipboard paste
+wbPasteImageBtn.addEventListener('click', async () => {
+  try {
+    const clipboardItems = await navigator.clipboard.read();
+    for (const item of clipboardItems) {
+      const type = item.types.find(t => t.startsWith("image/"));
+      if (!type) continue;
+      const blob = await item.getType(type);
+      const img = new Image();
+      img.onload = () => {
+        wbImages.push({
+          image: img,
+          x: 100,
+          y: 100,
+          width: img.width * 0.4,
+          height: img.height * 0.4
+        });
+        switchToEditMode();
+        drawWhiteboardStrokes();
+      };
+      img.src = URL.createObjectURL(blob);
+      break;
+    }
+  } catch (err) {
+    alert("Clipboard read failed. Make sure you’ve copied an image and allowed permissions.");
+    console.error(err);
+  }
+});
+
+
 
 const toggleWhiteboardBtn = document.getElementById('toggleWhiteboardBtn');
 
