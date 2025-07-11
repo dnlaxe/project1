@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Smart Annotator - Full Controls</title>
+  <title>Smart Annotator with Stroke Border and Fill</title>
   <style>
     body {
       margin: 0;
@@ -20,6 +20,8 @@
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
       font-size: 14px;
+      max-height: 95vh;
+      overflow-y: auto;
     }
     canvas {
       display: block;
@@ -44,11 +46,33 @@
 </head>
 <body>
   <div id="toolbar">
+    <!-- Color Settings -->
+    <label>Inside Color:</label>
+    <input type="color" id="colorInside" value="#98ff98">
+
+    <label>Border Color:</label>
+    <input type="color" id="colorBorder" value="#009900">
+
+    <label>Opacity: <span class="val" id="opacityVal">0.7</span></label>
+    <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.7">
+
+    <label>Shadow Blur: <span class="val" id="shadowBlurVal">0</span></label>
+    <input type="range" id="shadowBlur" min="0" max="20" step="1" value="0">
+
+    <label>
+      Enable Shadow:
+      <input type="checkbox" id="enableShadow">
+    </label>
+
+    <!-- Stroke Settings -->
     <label>Smoothing: <span class="val" id="smoothingVal">1</span></label>
     <input type="range" id="smoothing" min="0" max="1" step="0.01" value="1">
 
-    <label>Streamline: <span class="val" id="streamlineVal">1</span></label>
-    <input type="range" id="streamline" min="0" max="1" step="0.01" value="1">
+    <label>Streamline While Drawing: <span class="val" id="drawStreamlineVal">0.5</span></label>
+    <input type="range" id="drawStreamline" min="0" max="1" step="0.01" value="0.5">
+
+    <label>Streamline After Draw: <span class="val" id="streamlineVal">0.8</span></label>
+    <input type="range" id="streamline" min="0" max="1" step="0.01" value="0.8">
 
     <label>Thinning: <span class="val" id="thinningVal">0.5</span></label>
     <input type="range" id="thinning" min="-1" max="1" step="0.01" value="0.5">
@@ -79,7 +103,6 @@
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
@@ -87,10 +110,16 @@
     let currentPoints = [];
     const strokes = [];
 
-    // Get control elements
     const controls = {
+      colorInside: document.getElementById('colorInside'),
+      colorBorder: document.getElementById('colorBorder'),
+      opacity: document.getElementById('opacity'),
+      shadowBlur: document.getElementById('shadowBlur'),
+      enableShadow: document.getElementById('enableShadow'),
+
       smoothing: document.getElementById('smoothing'),
       streamline: document.getElementById('streamline'),
+      drawStreamline: document.getElementById('drawStreamline'),
       thinning: document.getElementById('thinning'),
       size: document.getElementById('size'),
       simulatePressure: document.getElementById('simulatePressure'),
@@ -98,61 +127,100 @@
     };
 
     const labels = {
+      opacity: document.getElementById('opacityVal'),
+      shadowBlur: document.getElementById('shadowBlurVal'),
       smoothing: document.getElementById('smoothingVal'),
       streamline: document.getElementById('streamlineVal'),
+      drawStreamline: document.getElementById('drawStreamlineVal'),
       thinning: document.getElementById('thinningVal'),
       size: document.getElementById('sizeVal')
     };
 
-    // Easing functions
     const easingFunctions = {
       linear: t => t,
       easeIn: t => t * t,
       easeOut: t => 1 - Math.cos((t * Math.PI) / 2)
     };
 
-    function getOptions() {
+    function getOptions(isFinal) {
       return {
         size: parseFloat(controls.size.value),
         thinning: parseFloat(controls.thinning.value),
         smoothing: parseFloat(controls.smoothing.value),
-        streamline: parseFloat(controls.streamline.value),
+        streamline: isFinal
+          ? parseFloat(controls.streamline.value)
+          : parseFloat(controls.drawStreamline.value),
         simulatePressure: controls.simulatePressure.checked,
         easing: easingFunctions[controls.easing.value],
         last: true
       };
     }
 
-    function getStrokePath(points) {
-      return getStroke(points, getOptions());
+    function getStrokePath(points, isFinal = false) {
+      return getStroke(points, getOptions(isFinal));
+    }
+
+    function drawStroke(points, isFinal = false) {
+      const stroke = getStrokePath(points, isFinal);
+      const innerColor = controls.colorInside.value;
+      const outerColor = controls.colorBorder.value;
+      const alpha = parseFloat(controls.opacity.value);
+      const blur = parseInt(controls.shadowBlur.value, 10);
+
+      const rgbaInner = hexToRgba(innerColor, alpha);
+      const rgbaOuter = hexToRgba(outerColor, alpha);
+      const strokeSize = getOptions(isFinal).size;
+
+      // Draw outer border (larger stroke)
+      ctx.beginPath();
+      for (let i = 0; i < stroke.length; i++) {
+        const [x, y] = stroke[i];
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = rgbaOuter;
+      ctx.lineWidth = strokeSize + 4;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+
+      // Draw inner stroke
+      ctx.beginPath();
+      for (let i = 0; i < stroke.length; i++) {
+        const [x, y] = stroke[i];
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = rgbaInner;
+      ctx.lineWidth = strokeSize;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+
+      if (controls.enableShadow.checked) {
+        ctx.shadowColor = rgbaInner;
+        ctx.shadowBlur = blur;
+      } else {
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.stroke();
+    }
+
+    function hexToRgba(hex, alpha) {
+      const bigint = parseInt(hex.slice(1), 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
     function drawAllStrokes() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const points of strokes) {
-        drawStroke(points);
-      }
-      if (currentPoints.length > 0) {
-        drawStroke(currentPoints);
-      }
-    }
-
-    function drawStroke(points) {
-      const stroke = getStrokePath(points);
-      ctx.beginPath();
-      for (let i = 0; i < stroke.length; i++) {
-        const [x, y] = stroke[i];
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
-      ctx.strokeStyle = '#222';
-      ctx.lineWidth = 2;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.stroke();
+      for (const points of strokes) drawStroke(points, true);
+      if (currentPoints.length > 0) drawStroke(currentPoints, false);
     }
 
     canvas.addEventListener('pointerdown', (e) => {
@@ -186,7 +254,6 @@
       drawAllStrokes();
     });
 
-    // Update value labels in real-time
     for (const key in labels) {
       controls[key].addEventListener('input', () => {
         labels[key].textContent = controls[key].value;
