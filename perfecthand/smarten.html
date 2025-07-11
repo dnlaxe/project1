@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Annotator</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    #toolbar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+    }
+    canvas {
+      display: block;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button id="undoBtn">Undo</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script type="module">
+    import { getStroke } from 'https://cdn.skypack.dev/perfect-freehand';
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let isDrawing = false;
+    let currentPoints = [];
+    const strokes = []; // Store all finished strokes
+
+    function drawAllStrokes() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const points of strokes) {
+        drawStroke(points);
+      }
+      if (currentPoints.length > 0) {
+        drawStroke(currentPoints);
+      }
+    }
+
+    function drawStroke(points) {
+      const stroke = getStroke(points, {
+        size: 8,
+        thinning: 0.5,
+        smoothing: 1,
+        streamline: 1,
+        simulatePressure: false,
+        easing: t => t,
+        last: true
+      });
+
+      ctx.beginPath();
+      for (let i = 0; i < stroke.length; i++) {
+        const [x, y] = stroke[i];
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      isDrawing = true;
+      currentPoints = [[e.offsetX, e.offsetY]];
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!isDrawing) return;
+      currentPoints.push([e.offsetX, e.offsetY]);
+      drawAllStrokes();
+    });
+
+    canvas.addEventListener('pointerup', () => {
+      isDrawing = false;
+      if (currentPoints.length > 0) {
+        strokes.push(currentPoints);
+        currentPoints = [];
+        drawAllStrokes();
+      }
+    });
+
+    document.getElementById('undoBtn').addEventListener('click', () => {
+      strokes.pop(); // Remove last stroke
+      drawAllStrokes();
+    });
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      drawAllStrokes(); // Redraw everything on resize
+    });
+  </script>
+</body>
+</html>
