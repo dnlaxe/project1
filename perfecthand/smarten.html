@@ -3,30 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Smart Annotator</title>
+  <title>Smart Annotator with Smoothing Controls</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
+      font-family: sans-serif;
     }
     #toolbar {
       position: absolute;
       top: 10px;
       left: 10px;
       z-index: 10;
-    }
-    button {
-      padding: 8px 16px;
-      font-size: 16px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
     canvas {
       display: block;
       background: #fff;
     }
+    label {
+      display: block;
+      margin: 6px 0 2px;
+    }
+    input[type="range"] {
+      width: 150px;
+    }
+    button {
+      margin-top: 8px;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <div id="toolbar">
+    <label>Smoothing: <span id="smoothingValue">1.0</span></label>
+    <input type="range" id="smoothing" min="0" max="1" step="0.01" value="1.0">
+    
+    <label>Streamline: <span id="streamlineValue">1.0</span></label>
+    <input type="range" id="streamline" min="0" max="1" step="0.01" value="1.0">
+    
+    <br/>
     <button id="undoBtn">Undo</button>
   </div>
 
@@ -43,7 +63,27 @@
 
     let isDrawing = false;
     let currentPoints = [];
-    const strokes = []; // Store all finished strokes
+    const strokes = [];
+
+    // Dynamic settings
+    const smoothingSlider = document.getElementById('smoothing');
+    const streamlineSlider = document.getElementById('streamline');
+    const smoothingValue = document.getElementById('smoothingValue');
+    const streamlineValue = document.getElementById('streamlineValue');
+
+    function getStrokePath(points) {
+      const stroke = getStroke(points, {
+        size: 8,
+        thinning: 0.5,
+        smoothing: parseFloat(smoothingSlider.value),
+        streamline: parseFloat(streamlineSlider.value),
+        simulatePressure: false,
+        easing: t => t,
+        last: true
+      });
+
+      return stroke;
+    }
 
     function drawAllStrokes() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -56,19 +96,11 @@
     }
 
     function drawStroke(points) {
-      const stroke = getStroke(points, {
-        size: 8,
-        thinning: 0.5,
-        smoothing: 1,
-        streamline: 1,
-        simulatePressure: false,
-        easing: t => t,
-        last: true
-      });
+      const path = getStrokePath(points);
 
       ctx.beginPath();
-      for (let i = 0; i < stroke.length; i++) {
-        const [x, y] = stroke[i];
+      for (let i = 0; i < path.length; i++) {
+        const [x, y] = path[i];
         if (i === 0) {
           ctx.moveTo(x, y);
         } else {
@@ -103,14 +135,23 @@
     });
 
     document.getElementById('undoBtn').addEventListener('click', () => {
-      strokes.pop(); // Remove last stroke
+      strokes.pop();
       drawAllStrokes();
+    });
+
+    // Update displayed values
+    smoothingSlider.addEventListener('input', () => {
+      smoothingValue.textContent = smoothingSlider.value;
+    });
+
+    streamlineSlider.addEventListener('input', () => {
+      streamlineValue.textContent = streamlineSlider.value;
     });
 
     window.addEventListener('resize', () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      drawAllStrokes(); // Redraw everything on resize
+      drawAllStrokes();
     });
   </script>
 </body>
