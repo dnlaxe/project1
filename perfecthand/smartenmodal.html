@@ -10,6 +10,13 @@
       overflow: hidden;
       font-family: sans-serif;
     }
+    html, body {
+      overflow: hidden;
+      height: 100%;
+      touch-action: none;
+      overscroll-behavior: none;
+    }
+
     #toolbar {
       position: fixed;
       top: 0;
@@ -114,6 +121,33 @@
       border-radius: 8px;
       cursor: pointer;
     ">☰ Tools</button>
+
+    <button id="scrollUpBtn" style="
+      position: fixed;
+      bottom: 80px;
+      right: 10px;
+      z-index: 11;
+      padding: 10px;
+      font-size: 18px;
+      background: #555;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    ">↑</button>
+
+    <button id="scrollDownBtn" style="
+      position: fixed;
+      bottom: 20px;
+      right: 10px;
+      z-index: 11;
+      padding: 10px;
+      font-size: 18px;
+      background: #555;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    ">↓</button>
+
 
 
   <canvas id="canvas"></canvas>
@@ -316,6 +350,36 @@
         toolbar.classList.remove('active');
       }
     });
+
+    window.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+    window.addEventListener('keydown', e => {
+      if (['ArrowUp', 'ArrowDown', ' '].includes(e.key)) {
+        e.preventDefault();
+      }
+    });
+
+    let scrollInterval = null;
+
+    function scrollPage(amount) {
+      window.scrollBy({ top: amount, left: 0, behavior: 'instant' }); // You can replace with custom canvas logic if needed
+    }
+
+    function startScrolling(amount) {
+      if (scrollInterval) return;
+      scrollInterval = setInterval(() => scrollPage(amount), 16); // ~60fps
+    }
+
+    function stopScrolling() {
+      clearInterval(scrollInterval);
+      scrollInterval = null;
+    }
+
+    document.getElementById('scrollUpBtn').addEventListener('mousedown', () => startScrolling(-10));
+    document.getElementById('scrollDownBtn').addEventListener('mousedown', () => startScrolling(10));
+
+    document.addEventListener('mouseup', stopScrolling);
+    document.addEventListener('touchend', stopScrolling);
+
 
 
   </script>
