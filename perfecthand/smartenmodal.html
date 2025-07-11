@@ -13,9 +13,14 @@
     html, body {
       overflow: hidden;
       height: 100%;
+      margin: 0;
+      padding: 0;
       touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
       overscroll-behavior: none;
     }
+
 
     #toolbar {
       position: fixed;
@@ -57,6 +62,13 @@
       padding: 6px 12px;
       font-size: 14px;
     }
+
+    #scrollUpBtn, #scrollDownBtn {
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: none;
+    }
+
   </style>
 </head>
 <body>
@@ -345,11 +357,50 @@
       toolbar.classList.toggle('active');
     });
 
-    canvas.addEventListener('click', () => {
-      if (toolbar.classList.contains('active')) {
-        toolbar.classList.remove('active');
-      }
-    });
+canvas.addEventListener('click', () => {
+  if (toolbar.classList.contains('active')) {
+    toolbar.classList.remove('active');
+  }
+});
+
+// === SCROLL BUTTONS LOGIC ===
+const scrollStep = 10;
+let scrollInterval = null;
+
+function scrollCanvas(dy) {
+  window.scrollBy(0, dy); // or modify canvas offset here if needed
+}
+
+function startScrolling(dy) {
+  if (scrollInterval) return;
+  scrollInterval = setInterval(() => scrollCanvas(dy), 16); // ~60fps
+}
+
+function stopScrolling() {
+  clearInterval(scrollInterval);
+  scrollInterval = null;
+}
+
+const scrollUpBtn = document.getElementById('scrollUpBtn');
+const scrollDownBtn = document.getElementById('scrollDownBtn');
+
+// Handle both mouse and touch events
+['mousedown', 'touchstart'].forEach(eventType => {
+  scrollUpBtn.addEventListener(eventType, e => {
+    e.preventDefault();
+    startScrolling(-scrollStep);
+  });
+  scrollDownBtn.addEventListener(eventType, e => {
+    e.preventDefault();
+    startScrolling(scrollStep);
+  });
+});
+
+// Stop scrolling when released or touch ends
+['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(eventType => {
+  document.addEventListener(eventType, stopScrolling);
+});
+
 
     window.addEventListener('wheel', e => e.preventDefault(), { passive: false });
     window.addEventListener('keydown', e => {
